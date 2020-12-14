@@ -1,0 +1,409 @@
+---
+title: "Hospital Capacity Planning Using Discrete Event Simulation: Simmer" 
+author:
+  - name: Thomas Bartz-Beielstein
+    affiliation: IDEA, TH Köln
+    address:
+    - line 1
+    - line 2
+    email:  author1@work
+  - name: Frederik Rehbach
+    affiliation: IDEA, TH Köln
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+  - name: Olaf Mersmann
+    affiliation: Affiliation
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+  - name: Eva Bartz
+    affiliation: Affiliation
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+abstract: >
+  An abstract of less than 150 words.
+preamble: |
+  % Any extra LaTeX you need in the preamble
+header-includes:
+   - \usepackage{bbm}
+   - \usepackage{glossaries}
+   - \usepackage{xspace}
+   - \newacronym{crn}{CRN}{Common Random Numbers}
+   - \newcommand{\healed}{\texttt{Healed}\xspace}
+   - \newcommand{\bed}{\texttt{bed}\xspace}
+   - \newcommand{\nurse}{\texttt{nurse}\xspace}
+   - \newcommand{\sick}{\texttt{sick}\xspace}
+   - \newcommand{\amntDaysSickness}{\texttt{amntDaysSickness}\xspace}
+   - \newcommand{\factorVentilation}{\texttt{factorVentilation}\xspace}
+   - \newcommand{\factorIntensive}{\texttt{factorIntensive}\xspace}
+   - \newcommand{\factorHospital}{\texttt{factorHospital}\xspace}
+   - \newcommand{\intensiveBed}{\texttt{intensiveBed}\xspace}
+   - \newcommand{\intensiveBedVentilation}{\texttt{intensiveBedVentilation}\xspace}
+   - \newcommand{\FactorPatientsVentilationToDeath}{\texttt{FactorPatientsVentilationToDeath}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToVentilation}{\texttt{FactorPatientsIntensiveToVentilation}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToDeath}{\texttt{FactorPatientsIntensiveToDeath}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToAftercare}{\texttt{FactorPatientsIntensiveToAftercare}\xspace}
+   - \newcommand{\FactorPatientsNormalToIntensive}{\texttt{FactorPatientsNormalToIntensive}\xspace} 
+   - \newcommand{\FactorPatientsNormalToDeath}{\texttt{FactorPatientsNormalToDeath}\xspace}
+   - \newcommand{\FactorPatientsNormalToVentilation}{\texttt{FactorPatientsNormalToVentilation}\xspace}
+   - \newcommand{\FactorPatientsNormalToHealed}{\texttt{FactorPatientsNormalToHealed}\xspace}
+   - \newcommand{\FactorPatientsHospitalToNormal}{\texttt{FactorPatientsHospitalToNormal}\xspace}  
+   - \newcommand{\FactorPatientsHospitalToIntensive}{\texttt{FactorPatientsHospitalToIntensive}\xspace}   
+   - \newcommand{\FactorPatientsHospitalToVentilation}{\texttt{FactorPatientsHospitalToVentilation}\xspace}  
+   - \newcommand{\FactorPatientsHospitalToDeath}{\texttt{FactorPatientsHospitalToDeath}\xspace}  
+   - \newcommand{\FactorPatientsInfectedToAmbulant}{\texttt{FactorPatientsInfectedToAmbulant}\xspace} 
+   - \newcommand{\FactorPatientsInfectedToHealthy}{\texttt{FactorPatientsInfectedToHealthy}\xspace} 
+   - \newcommand{\FactorPatientsInfectedToHospital}{\texttt{FactorPatientsInfectedToHospital}\xspace} 
+   - \newcommand{\AmntNursesPerPatient}{\texttt{AmntNursesPerPatient}\xspace}
+   - \newcommand{\AmntInfectedPerDay}{\texttt{AmntInfectedPerDay}\xspace}
+   - \newcommand{\AmntInfectedPerDayCum}{\texttt{AmntInfectedPerDayCum}\xspace}
+   - \newcommand{\AmntDaysVentilationToAftercare}{\texttt{AmntDaysVentilationToAftercare}\xspace}
+   - \newcommand{\AmntDaysIntensiveToAftercare}{\texttt{AmntDaysIntensiveToAftercare}\xspace}
+   - \newcommand{\AmntDaysIntensiveToDeath}{\texttt{AmntDaysIntensiveToDeath}\xspace}
+   - \newcommand{\AmntDaysIntensiveToVentilation}{\texttt{AmntDaysIntensiveToVentilation}\xspace}
+   - \newcommand{\AmntDaysAmbulant}{\texttt{AmntDaysAmbulant}\xspace}
+   - \newcommand{\StartDate}{\texttt{StartDate}\xspace}
+   - \newcommand{\aftercare}{\texttt{aftercare}\xspace}
+   - \newcommand{\intensive}{\texttt{intensive}\xspace}
+   - \newcommand{\ventilation}{\texttt{ventilation}\xspace}
+   - \newcommand{\ambulant}{\texttt{ambulant}\xspace}
+   - \newcommand{\normalStation}{\texttt{normalStation}\xspace}
+   - \newcommand{\hospital}{\texttt{hospital}\xspace}
+   - \newcommand{\infected}{\texttt{infected}\xspace}
+   - \newcommand{\death}{\texttt{death}\xspace}
+   - \newcommand{\transferout}{\texttt{transferout}\xspace} 
+   - \newcommand{\intensiveAfter}{\texttt{intensiveAfter}\xspace}
+date: "`r Sys.Date()`"
+output:
+   rmarkdown::html_vignette:
+      fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{Hospital Capacity Planning Using Discrete Event Simulation: Simmer}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---   
+
+
+
+## The `simmer` Model
+
+### Warmup Period (Burn in)
+
+* The babsim model does not consider occupied beds. 
+* It does not simulate a warmup period.
+
+### Elements of the Hospital System
+
+* TODO: Describe the patient trajectory.
+* Factors and durations, e.g., 
+`FactorPatientsInfectedToHealthy = 0.831` and `AmntDaysInfectedToHealed = 20.5`.
+* TODO: Create a table to list states and transition probabilities and durations.
+
+* The states, durations, and transition probabilities are visualized in Fig.~\ref{fig:20200803states}
+
+```{r simmerStates, echo=FALSE, fig.cap='Simmer States.', out.width='5in', fig.align='center', fig.pos='htbp'}
+knitr::include_graphics('20200803states.pdf')
+```
+
+## Performing simmer Simulations
+
+```{r, include = FALSE, eval = TRUE}
+simRepeats <- 25
+```
+We will perform  `r simRepeats` simulation runs (repeats with different seeds).
+
+* simmer counters
+
+The following counter are used:
+\begin{itemize}
+\item "No Hospital Required"
+\item "Dead"
+\item \healed
+\end{itemize}
+
+
+
+### simmer Activities
+
+
+```{r, include= FALSE}
+ minVal <- 1e-6 
+  # FactorPatientsInfectedToHealthy = 0.831, # wird nicht genutzt, sondern 1 - x17, ok
+    # AmntDaysInfectedToHealed = 20.5, # wird nicht genutzt, ok
+    #
+    # 2 Infiziert -> Krankenhaus Infected -> Hospital
+    FactorPatientsInfectedToHospital = 0.169 # x17 
+    AmntDaysInfectedToHospital = 8.4 # x1
+    #
+    # Not used: Infected -> Ambulant
+    # FactorPatientsInfectedToAmbulant = minVal
+    # AmntDaysInfectedToAmbulant = minVal
+    #
+    # 3 Krankenhaus -> Normalstation Hospital -> Normal
+    FactorPatientsHospitalToNormal = minVal # fehlt (Differenz, ok)
+    AmntDaysHospitalToNormal = minVal # nicht genutzt
+    #
+    # 4 Krankenhaus -> Intensiv ohne Beatmung Hospital -> Intensive
+    FactorPatientsHospitalToIntensive = 0.04  #0.012, # x18
+    AmntDaysHospitalToIntensiv = minVal # nicht genutzt
+    #
+    # 5 Krankenhaus -> Intensiv mit Beatmung Hospital -> Ventilation
+    FactorPatientsHospitalToVentilation = 0.036 #x19
+    AmntDaysHospitalToVentilation = minVal # nicht genutzt
+    #
+    #6 Normalstation -> Healthy
+    FactorPatientsNormalToHealthy = minVal # fehlt (Differenz, ok)
+    AmntDaysNormalToHealthy = 11.6 #x2
+    #
+    #7 Normalstation ->  Intensive
+    FactorPatientsNormalToIntensive = 0.0506 #x20 
+    AmntDaysNormalToIntensive = 1.25 # x3
+    #
+    #8 Normalstation ->  Ventilation
+    FactorPatientsNormalToVentilation = 0.1013 #x21
+    AmntDaysNormalToVentilation = 3.63 #x4
+    #
+    #9 Normalstation -> Verstorben Normal -> Death
+    FactorPatientsNormalToDeath = 0.139 # x22
+    AmntDaysNormalToDeath  = 11.4 # x5
+    #
+    #10 Intensiv ohne Beatmung -> Aftercare
+    FactorPatientsIntensiveToAftercare = 0.25 # dependent, not used
+    AmntDaysIntensiveToAftercare = 7.0 # x6
+    #
+    #11 Intensiv ohne Beatmung  -> Ventilation
+    FactorPatientsIntensiveToVentilation = 0.25 # x23
+    AmntDaysIntensiveToVentilation = 2.0 # x7
+    #
+    #12 Intensiv ohne Beatmung -> Death
+    FactorPatientsIntensiveToDeath = 0.25 # x24
+    AmntDaysIntensiveToDeath = 2.0 # x8
+    #
+    #12a Intensiv ohne Beatmung ->  Healthy
+    FactorPatientsIntensiveToHealthy = 0.25 # x25
+    AmntDaysIntensiveToHealthy = 13.0 # x9
+    #
+    #13 Intensiv mit Beatmung -> Nachbehandlung Ventilation -> Aftercare
+    FactorPatientsVentilationToAftercare = 0.08 # nicht benoetigt, Differenz, ok
+    AmntDaysVentilationToAftercare = 9 # erhoeht, da mit #14 zusammen # x10
+    #
+    #14 Intensiv mit Beatmung ->  IntensiveAfter
+    FactorPatientsVentilationToIntensiveAfter = 0.42 # x26
+    AmntDaysVentilationToIntensiveAfter = 23.0 #  x11
+    #
+    #15 Intensiv mit Beatmung -> Death
+    FactorPatientsVentilationToDeath = 0.50  # x27
+    AmntDaysVentilationToDeath = 16 # x12
+    #
+    #16 Nachbehandlung -> Healthy
+    FactorPatientsAftercareToHealthy = 1 # 100% not used
+    AmntDaysAftercareToHealthy = 21 # x30
+    #
+    #17 I Intensiv ohne Beatmung II: IntensiveAfter -> Aftercare
+    FactorPatientsIntensiveAfterToAftercare = 0.50 # dependent, not used
+    AmntDaysIntensiveAfterToAftercare = 7.0 # x13
+    
+    #17 II Intensiv ohne Beatmung II: IntensiveAfter -> Healthy
+    FactorPatientsIntensiveAfterToHealthy = 0.50 # x28
+    AmntDaysIntensiveAfterToHealthy = 18.0 # x14
+    
+    #18 Intensiv ohne Beatmung II: IntensiveAfter -> Death
+    FactorPatientsIntensiveAfterToDeath = 1e-5 # x29
+    AmntDaysIntensiveAfterToDeath = 1 # x15
+    #
+    GammaShapeParameter = 1.0 # x16
+    # Not used 
+    AmntDaysAmbulant = minVal # small value, if 0
+    # is in conf: maxCapacity = 1e4
+    AmntNursesPerPatient = 1
+    # Risks based on age
+    RiskFactorA = 0.02048948 #x31
+    RiskFactorB = 0.01 #32
+    RiskMale = 2.0 #x33
+```
+
+
+Durations are defined as activities, i.e., completion times are random draws from probability distributions.
+
+* Assuming exponentially distributed durations, then GammaShapeParameter should be 1.
+
+### Simmer Trajectories
+
+* Trajectory `transferout`
+
+Patients that do not require hospital are sent home.
+Here, we model state changes from the state infected.
+
+*  Trajectory `Dead`
+
+Patients that die.
+
+* Trajectory `aftercare`
+
+An aftercare patient requires one bed.
+The patient stays on average `r AmntDaysAftercareToHealthy` days in this bed.
+Afterwards, the counter \healed is incremented.
+
+* Trajectory `intensiveAfter`
+
+* Trajectory `ventilation`
+
+The resource \bed is released and the resource \intensiveBedVentilation is seized.
+The following trajectories can be reached:
+\begin{enumerate}
+\item 
+Patients move to trajectory \death with probability \FactorPatientsVentilationToDeath  after 
+ days.
+\item 
+Patient move to trajectory \aftercare with probability (1- \FactorPatientsVentilationToDeath) 
+after \AmntDaysVentilationToAftercare days.
+\end{enumerate}
+
+* Trajectory `intensive`
+
+The resource \bed is released and one resource \intensiveBed is seized.
+The following trajectories can be reached:
+\begin{enumerate}
+\item Patients move from \intensive to trajectory \ventilation with probability \FactorPatientsIntensiveToVentilation after \AmntDaysIntensiveToVentilation days
+\item Patients move from \intensive to trajectory \death with probability \FactorPatientsIntensiveToDeath  after \AmntDaysIntensiveToDeath days
+\item Patients move from \intensive to trajectory \aftercare with probability \FactorPatientsIntensiveToAftercare  after \AmntDaysIntensiveToAftercare days
+\end{enumerate}
+
+
+* Trajectory `ambulant`
+
+The resource \bed is seized.
+The resource \nurse is seized \AmntNursesPerPatient times.
+The following trajectories can be reached:
+\begin{enumerate}
+\item Patients move from \ambulant to \healed after \AmntDaysAmbulant days
+\end{enumerate}
+
+* Trajectory `normalStation`
+
+Normal Bed in the Hospital.
+The resource \bed is seized.
+The resource \nurse is seized `r AmntNursesPerPatient` times.
+The following trajectories can be reached:
+\begin{enumerate}
+\item Patients move from \normalStation to trajectory \intensive with probability \FactorPatientsNormalToIntensive = `r FactorPatientsNormalToIntensive` after `r AmntDaysIntensiveToVentilation` days
+\item Patients move from \normalStation to trajectory \death with probability \FactorPatientsNormalToDeath = `r FactorPatientsNormalToDeath` after `r AmntDaysNormalToDeath` days
+\item Patients move from \normalStation to trajectory \ventilation with probability \FactorPatientsNormalToVentilation = `r FactorPatientsNormalToVentilation` after `r AmntDaysNormalToVentilation` days
+\item Patients move from \normalStation to \healed with probability \FactorPatientsNormalToHealed = `r (1- FactorPatientsNormalToIntensive - FactorPatientsNormalToDeath - FactorPatientsNormalToVentilation) ` after `r AmntDaysNormalToHealthy` days
+\end{enumerate}
+
+* Trajectory `hospital`
+
+Infected patient that comes to the hospital is immediately sent to a specific station.
+No resources are seized in this state.
+The following trajectories can be reached:
+\begin{enumerate}
+\item Patients move from \hospital to trajectory \intensive with probability \FactorPatientsHospitalToIntensive = `r FactorPatientsHospitalToIntensive`
+\item Patients move from \hospital to trajectory \ventilation with probability \FactorPatientsNormalToVentilation = `r FactorPatientsHospitalToVentilation` 
+\item Patients move from \hospital to trajectory \normalStation with probability \FactorPatientsHospitalToNormal = `r 1 -(FactorPatientsHospitalToIntensive + FactorPatientsHospitalToVentilation)`
+\end{enumerate}
+
+
+* Trajectory `infected`
+
+Initial Trajectory.
+Infected person becomes sick after `r AmntDaysInfectedToHospital` days and goes to the \hospital.
+No resources are seized in this state.
+The following trajectories can be reached:
+\begin{enumerate}
+\item Patients move from \infected to trajectory \transferout with probability \FactorPatientsInfectedToHealthy = `r 1- FactorPatientsInfectedToHospital` 
+\item Patients move from \infected to trajectory \hospital with probability \FactorPatientsInfectedToHospital = `r FactorPatientsInfectedToHospital`
+\end{enumerate}
+
+### Starting One Simulation
+
+* The simmer babsim simulations start with arrivalTimes that are based on the number of \infected persons (on a daily basis), not \sick persons! 
+
+```{r, eval = FALSE, include= FALSE}
+simmer("Simulation") %>%
+  add_dataframe("newInfected", infected, arrivalTimes, time = "absolute") %>%
+  add_resource("bed", Amnt_Normal_Beds) %>%
+  add_resource("intensiveBed", Amnt_Intensive_Care_Beds) %>%
+  add_resource("intensiveBedVentilation",
+               Amnt_Intensive_Care_Beds_Ventilation) %>%
+  add_resource("nurse", Amnt_Nurses) %>%
+  #add_resource("doctor",Amnt_Doctors) %>%
+  run()
+```
+
+*  Simulate n replicates
+
+```{r, eval = FALSE, include= FALSE}
+envs <- lapply(1:simRepeats, function(i) {
+  simmer("Simulation") %>%
+    add_dataframe("newInfected", infected, arrivalTimes, time = "absolute") %>%
+    add_resource("bed", Amnt_Normal_Beds) %>%
+    add_resource("intensiveBed", Amnt_Intensive_Care_Beds) %>%
+    add_resource("intensiveBedVentilation",
+                 Amnt_Intensive_Care_Beds_Ventilation) %>%
+    add_resource("nurse", Amnt_Nurses) %>%
+    #add_resource("doctor",Amnt_Doctors) %>%
+    run()
+})
+```
+
+*  Results
+```{r, eval = FALSE, include= FALSE}
+AmntInfected = list( infectedPerDayCum, infectedPerDay)
+```
+
+Extract resources from simulation
+
+```{r, eval = FALSE, include= FALSE}
+resources <- get_mon_resources(envs)
+## simple resource plot
+print(plot(resources, steps=TRUE))
+```
+
+* Summary Statistics
+
+```{r, eval = FALSE, include= FALSE}
+resources$time <- round(resources$time) ## Round Time to single days!
+
+## If there are replicates, look for median, worst and best case scenario
+resourcesMaxSystem <- resources %>% group_by(resource, time) %>%  mutate(upper = max(system)) %>%
+    mutate(lower = min(system)) %>% mutate(med = median(system))
+
+## Cutoff date for plotting
+resourcesMaxSystem <- resourcesMaxSystem %>% filter(time <= (observedPeriod + 
+                                                        as.numeric(as.Date(StartDateSimulation)- as.Date(StartDate))))
+
+resourcesMaxSystem$date<-as.POSIXct((resourcesMaxSystem$time)*24*60*60,origin=StartDate)
+
+```
+
+
+
+```{r, eval = FALSE, include= FALSE}
+## Add simulations from other sources to plots
+resourcesMaxSystem$source = "BuB"
+resourcesMaxSystem <- resourcesMaxSystem %>% filter(resource != "nurse")
+
+resourcesMaxSystem <- bind_rows(resourcesMaxSystem,
+                                getDataFromFixedNumbers(0.027,0,0.013,  sickPerDay,"Köln"))
+resourcesMaxSystem <- bind_rows(resourcesMaxSystem,
+                                getDataFromFixedNumbers(0.14,0,0.03,  sickPerDay,"WHO"))
+resourcesMaxSystem <- bind_rows(resourcesMaxSystem,
+                                getDataFromFixedNumbers(0.1347,0.004,0.0171,  sickPerDay,"OBK"))
+```
+
+
+```{r, eval = FALSE, include= FALSE}
+{p <- ggplot(resourcesMaxSystem,aes(x=date,y=med, color = source)) +
+          geom_line() + 
+          geom_ribbon(aes(ymin=lower, ymax=upper), alpha=0.3) + 
+          facet_wrap(facets = vars(resource)) +
+          labs(x="Date",y="Usage")
+print(p)}
+```
+

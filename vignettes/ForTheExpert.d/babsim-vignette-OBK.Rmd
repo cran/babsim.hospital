@@ -1,0 +1,590 @@
+---
+title: "Hospital Capacity Planning Using Discrete Event Simulation: OBK" 
+author:
+  - name: Thomas Bartz-Beielstein
+    affiliation: IDEA, TH Köln
+    address:
+    - line 1
+    - line 2
+    email:  author1@work
+  - name: Frederik Rehbach
+    affiliation: IDEA, TH Köln
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+  - name: Olaf Mersmann
+    affiliation: Affiliation
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+  - name: Eva Bartz
+    affiliation: Affiliation
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+abstract: >
+  An abstract of less than 150 words.
+preamble: |
+  % Any extra LaTeX you need in the preamble
+header-includes:
+   - \usepackage{bbm}
+   - \usepackage{glossaries}
+   - \usepackage{xspace}
+   - \newacronym{crn}{CRN}{Common Random Numbers}
+   - \newcommand{\healed}{\texttt{Healed}\xspace}
+   - \newcommand{\bed}{\texttt{bed}\xspace}
+   - \newcommand{\nurse}{\texttt{nurse}\xspace}
+   - \newcommand{\sick}{\texttt{sick}\xspace}
+   - \newcommand{\amntDaysSickness}{\texttt{amntDaysSickness}\xspace}
+   - \newcommand{\factorVentilation}{\texttt{factorVentilation}\xspace}
+   - \newcommand{\factorIntensive}{\texttt{factorIntensive}\xspace}
+   - \newcommand{\factorHospital}{\texttt{factorHospital}\xspace}
+   - \newcommand{\intensiveBed}{\texttt{intensiveBed}\xspace}
+   - \newcommand{\intensiveBedVentilation}{\texttt{intensiveBedVentilation}\xspace}
+   - \newcommand{\FactorPatientsVentilationToDeath}{\texttt{FactorPatientsVentilationToDeath}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToVentilation}{\texttt{FactorPatientsIntensiveToVentilation}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToDeath}{\texttt{FactorPatientsIntensiveToDeath}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToAftercare}{\texttt{FactorPatientsIntensiveToAftercare}\xspace}
+   - \newcommand{\FactorPatientsNormalToIntensive}{\texttt{FactorPatientsNormalToIntensive}\xspace} 
+   - \newcommand{\FactorPatientsNormalToDeath}{\texttt{FactorPatientsNormalToDeath}\xspace}
+   - \newcommand{\FactorPatientsNormalToVentilation}{\texttt{FactorPatientsNormalToVentilation}\xspace}
+   - \newcommand{\FactorPatientsNormalToHealed}{\texttt{FactorPatientsNormalToHealed}\xspace}
+   - \newcommand{\FactorPatientsHospitalToNormal}{\texttt{FactorPatientsHospitalToNormal}\xspace}  
+   - \newcommand{\FactorPatientsHospitalToIntensive}{\texttt{FactorPatientsHospitalToIntensive}\xspace}   
+   - \newcommand{\FactorPatientsHospitalToVentilation}{\texttt{FactorPatientsHospitalToVentilation}\xspace}  
+   - \newcommand{\FactorPatientsHospitalToDeath}{\texttt{FactorPatientsHospitalToDeath}\xspace}  
+   - \newcommand{\FactorPatientsInfectedToAmbulant}{\texttt{FactorPatientsInfectedToAmbulant}\xspace} 
+   - \newcommand{\FactorPatientsInfectedToHealthy}{\texttt{FactorPatientsInfectedToHealthy}\xspace} 
+   - \newcommand{\FactorPatientsInfectedToHospital}{\texttt{FactorPatientsInfectedToHospital}\xspace} 
+   - \newcommand{\AmntNursesPerPatient}{\texttt{AmntNursesPerPatient}\xspace}
+   - \newcommand{\AmntInfectedPerDay}{\texttt{AmntInfectedPerDay}\xspace}
+   - \newcommand{\AmntInfectedPerDayCum}{\texttt{AmntInfectedPerDayCum}\xspace}
+   - \newcommand{\AmntDaysVentilationToAftercare}{\texttt{AmntDaysVentilationToAftercare}\xspace}
+   - \newcommand{\AmntDaysIntensiveToAftercare}{\texttt{AmntDaysIntensiveToAftercare}\xspace}
+   - \newcommand{\AmntDaysIntensiveToDeath}{\texttt{AmntDaysIntensiveToDeath}\xspace}
+   - \newcommand{\AmntDaysIntensiveToVentilation}{\texttt{AmntDaysIntensiveToVentilation}\xspace}
+   - \newcommand{\AmntDaysAmbulant}{\texttt{AmntDaysAmbulant}\xspace}
+   - \newcommand{\StartDate}{\texttt{StartDate}\xspace}
+   - \newcommand{\aftercare}{\texttt{aftercare}\xspace}
+   - \newcommand{\intensive}{\texttt{intensive}\xspace}
+   - \newcommand{\ventilation}{\texttt{ventilation}\xspace}
+   - \newcommand{\ambulant}{\texttt{ambulant}\xspace}
+   - \newcommand{\normalStation}{\texttt{normalStation}\xspace}
+   - \newcommand{\hospital}{\texttt{hospital}\xspace}
+   - \newcommand{\infected}{\texttt{infected}\xspace}
+   - \newcommand{\death}{\texttt{death}\xspace}
+   - \newcommand{\transferout}{\texttt{transferout}\xspace} 
+   - \newcommand{\intensiveAfter}{\texttt{intensiveAfter}\xspace}
+date: "`r Sys.Date()`"
+output:
+   rmarkdown::html_vignette:
+      fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{Hospital Capacity Planning Using Discrete Event Simulation: OBK}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---   
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+## Introduction
+
+* Resource and capacity planning for hospitals.
+* Paper from Lawton. \cite{Desv20a}
+
+
+## Materials and Methods
+
+```{r loadBabsim, include=FALSE}
+require("vctrs")
+require("slider")
+require("dplyr")
+require("parallel")
+require("simmer")
+require("simmer.plot")
+require("ggplot2")
+require("lubridate")
+require("reshape2")
+require("tidyverse")
+require("plotly")
+require("babsim.hospital")
+```
+
+
+```{r SPOT, eval = FALSE}
+## install.packages("devtools")
+## devtools::install_github("r-lib/devtools")
+url <- "http://owos.gm.fh-koeln.de:8055/bartz/spot.git"
+devtools::install_git(url = url)
+
+library(SPOT)
+packageVersion("SPOT")
+```
+
+
+# OBK Data
+
+## Data
+
+* simData contains information about the simulation period, i.e., the time
+interval used by the babsim simulator.
+* The correspondig dates are stored in the configuration as 
+    * simulationDates: StartDate and End Date
+* fieldData contains information about the period when information about the
+  ground truth is available, e.g., the real number of bed, intensiveBed,
+  intensiveBedVentilation resources.
+* `dataCovidBeds20200624` is a data frame of COVID-19 cases with 114 obs. of  
+6 variables (114 rows and 6 columns), which was manually compiled from the OBK Excel files:
+   * bed (int)
+   * intensiveBed (int) 
+   * intensiveBedVentilation (int)
+   * Day (Date, format: "2020-03-03" "2020-03-04" "2020-03-05" "2020-03-06" ...)
+   * Infected (num) 
+   * Sick (num)
+
+## Set up simData
+
+The function `getObkData` generates a list that contains two data frames: 
+1. simData and 
+2. field data.
+```{r, getObkData}
+data <- getObkData()
+simData <- data$simData
+fieldData  <- data$fieldData
+```
+
+Perform the simulation
+
+```{r, performObKSim}
+conf <- getConfFromData(simData = simData,
+                        fieldData = fieldData)
+set.seed(conf$seed)
+para <- babsimHospitalPara()
+arrivalTimes <- getArrivalTimes(simData$Infected)
+envs <- babsimHospital(arrivalTimes = arrivalTimes,
+                    conf = conf,
+                    para = para
+                    )
+```
+
+Plot resource usage
+
+```{r, plotMonResources}
+resources <- get_mon_resources(envs)
+resources$capacity <- resources$capacity/1e5
+plot(resources, metric = "usage", conf$ResourceNames, items = "server")
+```
+
+Get real data (field data)
+
+```{r, CombineSimField}
+fieldEvents <- getRealBeds(data = fieldData)
+res <- getDailyMaxResults(envs = envs,  fieldEvents = fieldEvents)
+## save as default:
+(errDefault <- getError(res))
+```
+
+
+```{r, plotSimField}
+plotDailyMaxResults(res)
+```
+
+## Optimization (to be used from the command line in the folder Run.d)
+```{r, eval = FALSE}
+expName <- "obkNoise35"
+require("SPOT")
+require("babsim.hospital")
+require("simmer")
+##########################################################
+data <- getObkData()
+###########################################################
+## n = number of function evaluations, Anzahl der 30-dim x Vektoren, die getestet werden
+n = 35
+## k = Groesse des initialen Designs für SPOT (k < n)
+k = 30
+## m = Anzahl der Simulationswiederholungen für Simnf
+m = 2
+## parallele Auswertung?
+PARALLEL = FALSE
+##
+ICU = FALSE
+##
+PERCORES = 0.5
+## Anzahl der Punkte, die von SPOT fuer das Metamodell verwendet werden. Sollte
+## fuer Kriging nicht zu gross gewählt werden (<100):
+SUBSET = 50
+#############################################################
+x0 <- getStartParameter()
+bounds <- getBounds()
+conf = babsimToolsConf()
+set.seed(conf$seed)
+conf$parallel = PARALLEL
+conf$simRepeats = m
+conf$ICU = ICU
+conf$percCores = PERCORES
+conf$logLevel =1
+FILENAME <-  paste0("../Results.d/run", expName, ".RData")
+assign( expName, 
+        spot(
+          x = x0,
+          fun = funWrapOptimizeSim,
+          lower = bounds$lower,
+          upper = bounds$upper,
+          control = list(
+            funEvals = n,
+            noise = TRUE,
+            optimizer = optimLBFGSB,
+            model =  buildKriging,
+            plots = FALSE,
+            progress = TRUE,
+            subsetSelect = selectN,
+            subsetControl = list(N = SUBSET),
+            designControl = list(size = k)
+          ),
+          conf = conf,
+          data = data
+        )
+)
+# save(list = eval(parse(text = "expName")) , file = FILENAME)
+```
+
+
+
+### The OBK Data (Real-world Data)
+
+
+* OBK data are included in the `babsim` package, which can be loaded as follows:
+
+```{r}
+amntDaysSickness <- 20
+obk <- dataCovidBeds20200624
+obk$Sick2 <-  slide_dbl(obk$Infected, ~sum(.x), .before = (amntDaysSickness -1))
+str(obk)
+sum(obk$Sick- obk$Sick2)
+```
+
+
+```{r}
+obk$InfCum <- cumsum(obk$Infected)
+```
+
+
+```{r obkData, fig.show='hold', fig.cap="OBK data"}
+{plot(obk$Day, obk$InfCum, type="l", log="y", ylim=c(1,500))
+lines(obk$Day, obk$Infected + 1e-6)}
+```
+```{r}
+obk$InfectedSlideWeek <-  slide_dbl(obk$Infected, ~mean(.x), .before = (7 -1))
+obk$InfectedSlide2Weeks <-  slide_dbl(obk$Infected, ~mean(.x), .before = (14 -1))
+```
+
+```{r}
+{plot(obk$Day, obk$Infected, type="l")
+lines(obk$Day, obk$InfectedSlideWeek, col = "green")
+lines(obk$Day, obk$InfectedSlide2Weeks, col = "grey")
+legend('topright', lty = 1, c("infected", "infectedWeek",  "infected2Weeks"), col = c("black", "green",  "grey"))
+}
+```
+
+
+```{r}
+{plot(obk$Day, obk$Infected, type="l")
+lines(obk$Day, obk$InfectedSlideWeek, col = "green")
+lines(obk$Day, obk$bed, col = "blue")
+lines(obk$Day, obk$intensiveBed, col = "orange")
+lines(obk$Day, obk$intensiveBedVentilation, col = "red")
+legend('topright', lty = 1, c("infected", "infectedWeek",  "normal", "intens", "vent"), col = c("black", "green",  "blue", "orange", "red"))
+}
+```
+
+
+### Performing Simulations Using Real Data
+
+*  Simulation with Real Data
+
+To define the simulation period, the `obk` data will be used:
+\begin{itemize}
+\item `StartDate`: the day, logging of real data starts, e.g., "2020-03-03"
+\item `EndDate`: last day for simulations, e.g. "2020-05-07"
+\end{itemize}
+The observedPeriod is defined as the complete period, which will be analyzed in this project, e.g.,
+observedPeriod = 1 + EndData - StartDate.
+
+```{r}
+StartDate <- obk$Day[1]
+EndDate <- obk$Day[length(obk$Day)] 
+observedPeriod = 1 + as.numeric(as.Date(EndDate)- as.Date(StartDate))
+```
+
+
+####  The OBK Simulations/Predictions
+
+```{r}
+infectedPerDay <- obk$Infected
+infectedPerDayCum <- cumsum(infectedPerDay)
+obk$Sick <-  slide_dbl(obk$Infected, ~sum(.x), .before = (amntDaysSickness -1))
+# print(data.frame(day = 1:length(infectedPerDay), infected= infectedPerDay, sick = obk$Sick, infectedCum = infectedPerDayCum))
+```
+
+```{r}
+{plot(obk$Day, obk$InfCum, type="l")
+lines(obk$Day, obk$Infected, col = "red")
+lines(obk$Day, obk$Sick, col = "blue")
+}
+```
+* TODO: Show results based on Excel percentages
+
+#### How to Perform Simmer Simulations Using Real Data
+
+* We will use the `obk` data again.
+* First, we generate `arrivalTimes` for the simulation.
+```{r}
+str(obk)
+set.seed(123)
+arrivalTimes <- getArrivalTimes(obk$Infected) 
+str(arrivalTimes)
+```
+
+* These arrival times are passed to the `babsimHospital` function.
+
+```{r callBabsimHospital, include= TRUE}
+conf = babsimToolsConf()
+
+conf$simRepeats = 10
+conf$logLevel = 0
+conf$seed = 123
+y <- babsimHospital(arrivalTimes = arrivalTimes
+                   , conf = conf
+                   , para = babsimHospitalPara()
+ )
+```
+
+
+#### How to Evaluate Results
+
+* To evaluate the simulated results, we extract the real data.
+* To prepare real data, we select the real (field) data from the `obk` data set. 
+```{r getRealBeds}
+ GAData <- data.frame(bed=obk$bed, 
+                      intensiveBed=obk$intensiveBed, 
+                      intensiveBedVentilation=obk$intensiveBedVentilation,
+                      Day = obk$Day)
+ GABeds <- getRealBeds(data = GAData,  resource=c("bed", "intensiveBed", "intensiveBedVentilation"))
+```
+
+
+```{r getDailyMaxRes}
+res <- getDailyMaxResults(
+  envs = y,  
+  fieldEvents = GABeds)
+```
+
+* Now, simulated and real data are available in one single data frame: `res`.
+
+* TODO: Measure Performance
+* Error is just the sum of the RMSE values for bed, intensiveBed, and intensiveBedVentilation.
+
+```{r getErrorDef, eval = FALSE}
+getError <- function(res){
+res1 <- res %>% filter(resource == "bed"  & source == "babsim")
+df1 <- unique(data.frame(date = res1$date, x = res1$med))
+res2 <- res %>% filter(resource == "bed"  & source == "GA")
+df2 <- unique(data.frame(date = res2$date, x= res2$med))
+dfBed <- full_join(df1, df2, by=c("date"))
+dfBed[is.na(dfBed)] <- 0
+rmseBed <- rmse(dfBed[,2], dfBed[,3])
+
+res1 <- res %>% filter(resource == "intensiveBed"  & source == "babsim")
+df1 <- unique(data.frame(date = res1$date, x = res1$med))
+res2 <- res %>% filter(resource == "intensiveBed"  & source == "GA")
+df2 <- unique(data.frame(date = res2$date, x= res2$med))
+dfIntensiveBed <- full_join(df1, df2, by=c("date"))
+dfIntensiveBed[is.na(dfIntensiveBed)] <- 0
+rmseIntensiveBed <- rmse(dfIntensiveBed[,2], dfIntensiveBed[,3])
+
+res1 <- res %>% filter(resource == "intensiveBedVentilation"  & source == "babsim")
+df1 <- unique(data.frame(date = res1$date, x = res1$med))
+res2 <- res %>% filter(resource == "intensiveBedVentilation"  & source == "GA")
+df2 <- unique(data.frame(date = res2$date, x= res2$med))
+dfIntensiveBedVentilation <- full_join(df1, df2, by=c("date"))
+dfIntensiveBedVentilation[is.na(dfIntensiveBedVentilation)] <- 0
+rmseIntensiveBedVentilation <- rmse(dfIntensiveBedVentilation[,2], dfIntensiveBedVentilation[,3])
+return(rmseBed + rmseIntensiveBed + rmseIntensiveBedVentilation)
+}
+```
+
+* We calculate the error as the combined error from the three different bed categories:
+
+```{r getErrorVal, eval = TRUE}
+getError(res)
+```
+
+
+
+
+#### How to Plot Results From Real Simulation:
+
+```{r}
+p <- plotDailyMaxResults(res)
+print(p)
+```
+
+
+
+```{r, eval= FALSE}
+ggplotly(p)
+```
+
+
+
+
+
+
+## Appendix
+
+
+
+#### Sick Persons
+
+In contrast to the babsim simmer model, which uses the daily number of infections, 
+the standard models calculate the number of \sick persons using a time window of size \amntDaysSickness days.
+
+The number of infected people that require hospitalisation are calculated  as follows:
+
+Not every infected person requires hospitalization.
+The number of people, that have to go to the hospital is determined as follows:
+Only \infected people from the last \amntDaysSickness days are considered.
+These are labeled as \sick.
+Note the minus one in the calculation, because the current day counts as one of the \amntDaysSickness days.
+
+```{r ex1InfsCum, eval = TRUE}
+amntDaysSickness = 20
+Infs <- ex1InfectedDf$Infected
+sickPerDay <-  slide_dbl(Infs , ~sum(.x), .before = (amntDaysSickness -1))
+head(data.frame(day = 1:length(Infs), infected= Infs, sick = sickPerDay, ex1InfsCum = cumsum(Infs)))
+```
+
+```{r ex1Table, echo=FALSE, results='asis', eval= FALSE, include=FALSE}
+knitr::kable(head(data.frame(day = 1:length(Infs), infected= Infs, sick = sickPerDay, ex1InfsCum = cumsum(Infs))))
+```
+
+
+```{r plotex1Infs, eval = FALSE}
+p <- {plot( cumsum(Infs), type = "l", col="black", xlab = "days", ylab = "infected, sick")
+lines( 1:observedPeriod, Infs, col = "blue")
+lines( 1:observedPeriod, sickPerDay, col = "red")
+legend('topleft', lty = 1, c("infectedCum","infected", "sick"), col = c("black", "blue", "red"))
+}
+```
+
+* A fixed percentage of the dynamically changing number of sick persons has to go to the hospital, e.g.,
+requires a bed, an intensive care bed, or an intensive care bed with ventilation.
+
+For the standard models (OBK, Köln, and WHO) the following percentages, based on the number of \sick persons, were determined:
+\factorHospital, \factorIntensive, and \factorVentilation.
+
+The number of patients that need to go to the hospital is based on the infected people from the last \amntDaysSickness days.
+
+```{r, eval = FALSE, include= FALSE}
+## Get numbers as estimated in excel table based on fixed coefficients
+getDataFromFixedNumbers <- function(factorHospital, factorIntensive, factorVentilation, sickPerDay, source){
+    date <- as.POSIXct(seq(as.Date(StartDate), as.Date(EndDate), by="days"))
+    return(
+        rbind(
+            data.frame("resource" = "bed","time" = 1:length(sickPerDay), 
+                       "med" = ( sickPerDay * factorHospital), "source" = source,
+                       "date" = date),
+            data.frame("resource" = "intensiveBed","time" = 1:length(sickPerDay), 
+                       "med" = ( sickPerDay * factorIntensive), "source" = source,
+                       "date" = date),
+            data.frame("resource" = "intensiveBedVentilation","time" = 1:length(sickPerDay), 
+                       "med" = ( sickPerDay * factorVentilation), "source" = source,
+                       "date" = date)
+        )
+    )
+}
+```
+
+
+
+# Optimization of the Gamma Shape Parameter:
+
+```{r optimGammaShape, eval= FALSE}
+err <- c()
+for (i in 1:15){
+  trajList <- babsimHospitalTrajectories(GammaShapeParameter = i/10
+                   , control = babsimHospitalPara())
+  y <- babsimHospital(arrivalTimes = arrivalTimes
+                   , simRepeats = 100
+                   , control = babsimHospitalPara()
+                   , trajList = trajList)
+  res <- getDailyMaxResults(
+  envs = y,  
+  fieldEvents = GABeds)
+  err <- c(err,getError(res))
+}
+```
+
+* Running the previous code chunk takes some time. Therefore we provide the results in the following chunk:
+
+```{r OldresultsOptimGammaShape, eval= TRUE}
+errOLD <- c(14.480660, 12.815926, 11.432739, 10.106963,  9.055230,  8.486424,  8.093233,  7.855100,  8.619063,  8.821263,
+9.639260, 10.266499, 11.265664, 13.171530, 13.869897)
+```
+
+* These are the new results with the bug fixes from ver 1.0.2: 
+```{r NewresultsOptimGammaShape, eval= TRUE}
+err <- c(14.654427, 13.418457, 11.827037, 10.962369,  9.486851,  8.965150,  8.272998,  7.771752,  8.017022,  8.544688,  9.035368,  9.875065, 10.331149, 11.202670, 12.220776)
+```
+
+
+
+* Plotting:
+
+```{r plotOptimGammaShape, eval= TRUE, include= TRUE}
+plot( (1:15)/10, err, xlab="Gamma Shape Parameter")
+```
+
+
+* Gamma Shape = 0.8 is seems to be a good setting:
+
+```{r GammaShapeParameter08}
+para <- babsimHospitalPara()
+conf <- babsimToolsConf()
+conf$parallel <- FALSE
+
+y2 <- babsimHospital(arrivalTimes = arrivalTimes
+                   , conf = conf
+                   , para = para
+     )
+```
+
+
+```{r}
+res2 <- getDailyMaxResults(
+  envs = y2,  
+  fieldEvents = GABeds)
+getError(res2)
+```
+```{r}
+p <- plotDailyMaxResults(res2)
+print(p)
+```
+
+
+
+
+
+## Summary
+
+\bibliography{../bab-bibfiles/bartzAll.bib}

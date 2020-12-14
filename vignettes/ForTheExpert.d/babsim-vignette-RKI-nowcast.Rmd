@@ -1,0 +1,387 @@
+---
+title: "Hospital Capacity Planning Using Discrete Event Simulation: Nowcast" 
+author:
+  - name: Thomas Bartz-Beielstein
+    affiliation: IDEA, TH Köln
+    address:
+    - Steinmülleralle 1
+    - 51643 Gummersbach, Germany
+    email:  thomas.bartz-beielstein@th-koeln.de
+  - name: Frederik Rehbach
+    affiliation: IDEA, TH Köln
+    address:
+    - Steinmülleralle 1
+    - 51643 Gummersbach, Germany
+    email:  frederik.rehbach@th-koeln.de
+  - name: Olaf Mersmann
+    affiliation: IDEA, TH Köln
+    address:
+    - Steinmülleralle 1
+    - 51643 Gummersbach, Germany
+    email:  olaf.mersmann@th-koeln.de
+  - name: Eva Bartz
+    affiliation: Bartz und Bartz GmbH
+    address:
+    - Goebenstr. 10
+    - 51643 Gummersbach, Germany
+    email:  eva.bartz@bartzundbartz.de
+abstract: >
+ Resource planning for hospitals under special consideration of the COVID-19 pandemic.
+ Nowcast R Script From Joachim K. Rennstich
+preamble: |
+  % Any extra LaTeX you need in the preamble
+  % header-includes:
+always_allow_html: true  
+date: "`r Sys.Date()`"
+output:
+    rmarkdown::html_vignette:
+    fig_caption: yes 
+    pdf_document:
+      includes:
+            in_header: babsim.hospital.sty
+vignette: >
+  %\VignetteIndexEntry{Hospital Capacity Planning Using Discrete Event Simulation: Nowcast}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---   
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "%>"
+)
+```
+
+## Copyright Notice
+
+
+* The following code is from [Joachim K. Rennstich](https://github.com/jrennstich/Nowcast_RKI.git)
+
+
+## Packages
+
+```{r installDevtools, eval = FALSE}
+## install.packages("devtools")
+## devtools::install_github("r-lib/devtools")
+```
+
+
+```{r, installSPOT, eval = FALSE}
+url <- "http://owos.gm.fh-koeln.de:8055/bartz/spot.git"
+devtools::install_git(url = url)
+```
+
+
+```{r, install babsim.hospital, eval = FALSE}
+url <- "http://owos.gm.fh-koeln.de:8055/bartz/babsim.hospital.git"
+devtools::install_git(url = url)
+```
+
+```{r, cleanStart}
+
+suppressPackageStartupMessages({
+library("SPOT")
+library("babsim.hospital")
+library("simmer")
+library("simmer.plot")
+library("plotly")
+})
+```
+
+
+* Package version of `SPOT` must be larger than `2.0.64`:
+
+```{r loadSPOT, eval = FALSE}
+packageVersion("SPOT")
+```
+
+
+# Nowcast
+
+
+# R-script to Calculate Covid-19 R Number Based on RKI Nowcast Data
+The [Robert Koch Institute](https://www.rki.de) in Germany is releasing the most current forecasting of infection rate development of SARS-CoV-2-cases using a tool they call ["Nowcasting"](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Projekte_RKI/Nowcasting.html). They have also released a [paper](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Projekte_RKI/R-Wert-Erlaeuterung.pdf?__blob=publicationFile) in which they publish the [R](https://www.r-project.org/)-code to download the most current data stored in an Excel file and to plot both, the R value itself and the 7-day R-value forecasting estimate.
+
+I was running into trouble simply trying to run the code in my R set-up, so I made these scripts available for people, who were also struggling to plot the numbers themselves. There is a [German](https://github.com/jrennstich/Nowcast_RKI/blob/master/RKI_R_Nowcast_Script_DE.R) and an [English](https://github.com/jrennstich/Nowcast_RKI/blob/master/RKI_R_Nowcast_Script_EN.R) version. Hope you find it useful.
+
+# R-script zur Berechnung der aktuellen Covid-19 R Werte basierend auf dem RKI Nowcast Datensatz
+Das [Robert Koch Institute](https://www.rki.de) in Deutschoand veröffentlicht die Berechnungen der Infektionsraten (R-Werte) bezogen SARS-CoV-2-Fälle mit einem Modell namens ["Nowcasting"](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Projekte_RKI/Nowcasting.html). Das RKI hat ein [paper](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Projekte_RKI/R-Wert-Erlaeuterung.pdf?__blob=publicationFile) publiziert, wo auch der zur Berechnung notwendige [R](https://www.r-project.org/)-Code zum herunterladen der aktuellsten Nowcast Daten und Berechung der R-Werte und darauf basierende Plots (Graphiken) enthalten ist.
+
+Bei meinem ersten Versuch, diesen Code einfach laufen zu lassen in meinem Set-up schlug leider fehl. Also habe hier diese Scripts erweitert und dann auch noch weitere hinzugefügt, damit auch Personen mit geringen R Kenntnissen diese problemlos laufen lassen und sich Daten herunterladen und die Plots entsprechend selber erstellen können. Es gibt eine [deutsche](https://github.com/jrennstich/Nowcast_RKI/blob/master/RKI_R_Nowcast_Script_DE.R) und eine [englische](https://github.com/jrennstich/Nowcast_RKI/blob/master/RKI_R_Nowcast_Script_EN.R) Version. Viel Spass damit!
+
+
+```{r nowcast9, eval = FALSE}
+###################################################################################################################################
+# Reproducible Nowcast R-Script für R-Faktor in Deutschland auf Grundlage des Nowcast Datensatzes des Robert Koch Instituts (RKI) #
+###################################################################################################################################
+
+# Die hier präsentierten Scripts sind vom RKI in einem paper publiziert worden. Sie wurden so ergänzt, dass Nutzer_innen, auch mit geringeren 
+# R-Kenntnissen diese Skripts ohne Probleme in ihrer eigenen R oder RStudio Installation laufen lassen können.
+# Ferner wurden die Achsenbezeichnungen in Teilen sprachlich angepasst.
+
+# Um die aktuellen RKI Nowcast Daten herunterzuladen, die R-Werte zu berechnung und die Plots selbständig erstellen zu können,
+# benötigen Sie einige R-Erweiterungen, sog. "Packages". Im ersten Schritt werden Ihnen 3 Optionen präsentiert, um Sicherzustellen,
+# dass Sie alle notwendigen Packages installiert und geladen haben. 
+
+
+########################################
+# BENÖTIGTE PACKAGES - BEIM ERSTEN MAL #
+########################################
+
+# OPTION 1
+# Wenn Sie wissen, dass Sie KEINES der Packages installiert haben:
+# install.packages("xlsx", "stringr", "dplyr", "ggplot2", "scales")
+
+# OPTION 2
+# Wenn Sie nicht genau wissen, welche der Packages fehlen aber Sie nicht erst prüfen wollen, welche, dann können Sie mit diesem
+# Befehl alle Packages neu installieren. ACHTUNG! Dies kann eine Weile in Anspruch nehmen. 
+# install.packages(pkgs = c("xlsx", "stringr", "dplyr", "ggplot2", "scales"), dependencies=TRUE)
+
+# OPTION 3
+# Die folgenden Schritt-für-Schritt-Option ist am sichersten. Wenn Sie eine Fehlermeldung bekommen, dann entfernen Sie zunächst das "#"
+# am Anfang der folgenden zwei Zeilen (das nennt sich "Ent-Kommentieren" oder "uncomment"), das lässt R erkennen, dass es sich hier um Code handelt.
+# Dann wird das fehlende Package installiert und geladen. 
+
+# # Load necessary packages
+# library(xlsx)
+# #install.packages("xlsx")
+# #library(xlsx)
+# library(stringr)
+# #install.packages(stringr)
+# #library(stringr)
+# library(dplyr)
+# #install.packages(dplyr)
+# #library(dplyr)
+# library(ggplot2)
+# #install.packages(ggplot2)
+# #library(ggplot2
+# library(scales)
+# #install.packages(scales)
+# #library(scales)
+
+# In der Zukunft müssen Sie diesen Schritt nicht mehr machen. Sie können direk hier starten.
+```
+
+
+```{r nowcast0, eval = FALSE}
+######################
+# BENÖTIGTE PACKAGES #
+######################
+
+# Load necessary packages
+library("xlsx")
+library("stringr")
+library("dplyr")
+library("ggplot2")
+library("scales")
+```
+
+
+```{r nowcast1, eval = FALSE}
+###########################
+# HERUNTERLADEN DER DATEN #
+###########################
+
+# Lade neuesten Nowcast Datensatz von der RKI Webseite
+daten_file <- str_c("Nowcasting_Zahlen-",Sys.Date(),".xlsx")
+if (!file.exists(daten_file)) { 
+  file_url <- 
+    "https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Projekte_RKI/Nowcasting_Zahlen.xlsx?__blob=publicationFile" 
+  download.file(url=file_url,destfile= daten_file, mode="wb") 
+}
+
+# Lese Excel-File 
+data <- read.xlsx(file = daten_file, sheetName = "Nowcast_R", encoding = "UTF-8") 
+data <- data[,1:13] 
+
+# Umbennung der Spalten Namen zu kürzeren Variabelnamen 
+names(data) <- c("Datum", "NeuErkr", "lb_NeuErkr", "ub_NeuErkr", "NeuErkr_ma4", "lb_NeuErkr_ma4", 
+                 "ub_NeuErkr_ma4", "R", "lb_R", "ub_R", "R_7Tage", "lb_R_7Tage", "ub_R_7Tage")
+
+
+###########################
+# BERECHNUNG DES R-WERTES #
+###########################
+
+# R-Wert Berechnung bei einem seriellen Intervall von 4 Tagen 
+R_Wert <- rep(NA, nrow(data)) 
+for (t in 8:nrow(data)) { 
+  R_Wert[t] <- sum(data$NeuErkr[t-0:3]) / sum(data$NeuErkr[t-4:7])
+  } 
+data <- data %>% mutate(R_Wert = round(R_Wert, digits = 2))
+
+# Vergleiche mit den R-Werten in der Excel-Tabelle 
+data %>% select(Datum, R, R_Wert) %>% tail()
+```
+
+
+```{r nowcast2a, eval = FALSE}
+####################
+#PLOT DES R-WERTES #
+####################
+
+# Plot mit deutschen Bezeichnungen
+ggplot(data=data, aes(x=Datum)) +
+  geom_ribbon(aes(ymin = lb_R, ymax = ub_R), stat="identity", fill="steelblue")+
+  geom_line(aes(y = R), stat="identity", fill="steelblue")+
+  theme_minimal() + 
+  labs(title = "", x = "", y = "Reproduktionszahl R") + 
+  scale_x_date(date_breaks = "2 days", labels = 
+                 date_format("%d.%m.")) + 
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",", decimal.mark = ".", scientific = FALSE)) + 
+  theme(axis.text.x = element_text(angle=90, vjust=0))
+```
+
+
+```{r nowcast2, eval = FALSE}
+##################################
+# BERECHNUNG DES 7-TAGE R-WERTES #
+##################################
+
+# Berechnung des 7-Tage R-Wertes
+R7_Wert <- rep(NA, nrow(data)) 
+for (t in 11:nrow(data)) { 
+  R7_Wert[t-1] <- sum(data$NeuErkr[t-0:6]) / sum(data$NeuErkr[t-4:10]) 
+}
+data <- data %>% mutate(R7_Wert = round(R7_Wert, digits = 2)) 
+
+# Vergleiche mit R-Werten in Excel Tabelle 
+data %>% select(Datum, R_7Tage, R7_Wert) %>% tail()
+```
+
+
+```{r nowcast3, eval = FALSE}
+######################
+# PLOT 7-Tage R-Wert #
+######################
+
+# Plot mit deutschen Bezeichnungen
+ggplot(data=data, aes(x=Datum, y = R, color="R")) + 
+  geom_ribbon(aes(ymin = lb_R, ymax = ub_R, color=NULL), fill="steelblue") + 
+  geom_ribbon(aes(ymin = lb_R_7Tage, ymax = ub_R_7Tage, color=NULL), fill="orange") + 
+  geom_line(aes(y = R, color="R")) + geom_line(aes(y = R_7Tage, color="R_7Tage"), size = 1) +
+  theme_minimal() + 
+  labs(title = "", 
+       x = "", 
+       y = "Reproduktionszahl R") + 
+  scale_x_date(date_breaks = "2 days", labels = 
+                 date_format("%d.%m.")) + 
+  scale_y_continuous(labels = function(x) format(x, big.mark = ".", decimal.mark = ",", scientific = FALSE)) + 
+  scale_color_manual(name="Methode:", values=c("darkblue","orangered")) +
+  guides(color=guide_legend(override.aes=list(fill=NA))) + 
+  theme(axis.text.x = element_text(angle=90, vjust=0)) + 
+  theme(legend.position="bottom")
+```
+
+
+```{r nowcast4, eval = FALSE}
+# Reproducible Nowcast R-Script für R-Faktor in Deutschland, berechnet vom RKI
+
+# Überprüfen Sie, ob Sie alle notwendigen R-Pakete haben - diese sind in der u.
+# stehenden Zeile aufgeführt. (Wie geht das? 
+
+
+
+# Necessary packages
+# install.packages("xlsx", "stringr", "dplyr", "ggplot2", "scales")
+
+# Wenn Sie eine Fehlermeldung über ein spezifisches Package bekommen
+# löschen Sie die "#" Zeichen vorne (Kommentare in R beginnen mit einem #) die 
+# Zeilen unterhalb der Überschrift # Notwendige Libraries laden
+# If you get an error installing a specific package, uncomment (i.e., delete the '#') 
+# the line below that starts with install.packages
+# CAREFUL! This will (re)install all the packages listed here! This takes some time
+# install.packages(pkgs = c("xlsx", "stringr", "dplyr", "ggplot2", "scales"), dependencies=TRUE)
+
+# Notwendige Libraries laden
+library(xlsx)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+# Lade neuesten Nowcast von der RKI Webseite
+daten_file <- str_c("Nowcasting_Zahlen-",Sys.Date(),".xlsx")
+if (!file.exists(daten_file)) { 
+  file_url <- 
+    "https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Projekte_RKI/Nowcasting_Zahlen.xlsx?__blob=publicationFile" 
+  download.file(url=file_url,destfile= daten_file, mode="wb") 
+}
+
+# Lese Excel-File 
+data <- read.xlsx(file = daten_file, sheetName = "Nowcast_R", encoding = "UTF-8") 
+data <- data[,1:13] 
+
+
+# Umbennung der Spalten Namen zu kürzeren Variabelnamen 
+names(data) <- c("Datum", "NeuErkr", "lb_NeuErkr", "ub_NeuErkr", "NeuErkr_ma4", "lb_NeuErkr_ma4", 
+                 "ub_NeuErkr_ma4", "R", "lb_R", "ub_R", "R_7Tage", "lb_R_7Tage", "ub_R_7Tage")
+
+# R-Wert Berechnung bei einem seriellen Intervall von 4 Tagen 
+R_Wert <- rep(NA, nrow(data)) 
+for (t in 8:nrow(data)) { 
+  R_Wert[t] <- sum(data$NeuErkr[t-0:3]) / sum(data$NeuErkr[t-4:7])
+  } 
+data <- data %>% mutate(R_Wert = round(R_Wert, digits = 2))
+
+# Vergleiche mit den R-Werten in der Excel-Tabelle 
+data %>% select(Datum, R, R_Wert) %>% tail()
+```
+
+
+```{r nowcast5, eval = FALSE}
+# Plot 
+ggplot(data=data, aes(x=Datum)) +
+geom_ribbon(aes(ymin = lb_R, ymax = ub_R), stat="identity", fill="steelblue")+
+  geom_line(aes(y = R), stat="identity", fill="steelblue")+
+  theme_minimal() + 
+  labs(title = "", x = "", y = "Reproduktionszahl R") + 
+  scale_x_date(date_breaks = "2 days", labels = 
+                 date_format("%d.%m.")) + 
+  scale_y_continuous(labels = function(x) format(x, big.mark = ".", decimal.mark = ",", scientific = FALSE)) + 
+  theme(axis.text.x = element_text(angle=90, vjust=0))
+```
+
+
+```{r nowcast6, eval = FALSE}
+# Berechnung des 7-Tage R-Werts 
+R7_Wert <- rep(NA, nrow(data)) 
+for (t in 11:nrow(data)) { 
+  R7_Wert[t-1] <- sum(data$NeuErkr[t-0:6]) / sum(data$NeuErkr[t-4:10]) 
+  }
+data <- data %>% mutate(R7_Wert = round(R7_Wert, digits = 2))
+```
+
+
+```{r nowcast7, eval = FALSE}
+# Vergleiche mit den R-Werten in der Excel-Tabelle 
+data %>% select(Datum, R_7Tage, R7_Wert) %>% tail()
+```
+
+
+```{r nowcast8, eval = FALSE}
+# Plot für Berechnung des 7-Tage R-Wertes
+ggplot(data=data, aes(x=Datum, y = R, color="R")) + 
+  geom_ribbon(aes(ymin = lb_R, ymax = ub_R, color=NULL), fill="steelblue") + 
+  geom_ribbon(aes(ymin = lb_R_7Tage, ymax = ub_R_7Tage, color=NULL), fill="orange") + 
+  geom_line(aes(y = R, color="R")) + geom_line(aes(y = R_7Tage, color="R_7Tage"), size = 1) +
+  theme_minimal() + 
+  labs(title = "", 
+       x = "", 
+       y = "Reproduktionszahl R") + 
+  scale_x_date(date_breaks = "2 days", labels = 
+                 date_format("%d.%m.")) + 
+  scale_y_continuous(labels = function(x) format(x, big.mark = ".", decimal.mark = ",", scientific = FALSE)) + 
+  scale_color_manual(name="Methode:", values=c("darkblue","orangered")) +
+  guides(color=guide_legend(override.aes=list(fill=NA))) + 
+  theme(axis.text.x = element_text(angle=90, vjust=0)) + 
+  theme(legend.position="bottom")
+
+```
+
+
+
+
+
+\bibliography{../bab-bibfiles/bartzAll.bib}

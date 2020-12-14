@@ -1,0 +1,534 @@
+---
+title: "Hospital Capacity Planning Using Discrete Event Simulation: Synthetic Data" 
+author:
+  - name: Thomas Bartz-Beielstein
+    affiliation: IDEA, TH Köln
+    address:
+    - line 1
+    - line 2
+    email:  author1@work
+  - name: Frederik Rehbach
+    affiliation: IDEA, TH Köln
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+  - name: Olaf Mersmann
+    affiliation: Affiliation
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+  - name: Eva Bartz
+    affiliation: Affiliation
+    address:
+    - line 1
+    - line 2
+    email:  author2@work
+abstract: >
+  An abstract of less than 150 words.
+preamble: |
+  % Any extra LaTeX you need in the preamble
+header-includes:
+   - \usepackage{bbm}
+   - \usepackage{glossaries}
+   - \usepackage{xspace}
+   - \newacronym{crn}{CRN}{Common Random Numbers}
+   - \newcommand{\healed}{\texttt{Healed}\xspace}
+   - \newcommand{\bed}{\texttt{bed}\xspace}
+   - \newcommand{\nurse}{\texttt{nurse}\xspace}
+   - \newcommand{\sick}{\texttt{sick}\xspace}
+   - \newcommand{\amntDaysSickness}{\texttt{amntDaysSickness}\xspace}
+   - \newcommand{\factorVentilation}{\texttt{factorVentilation}\xspace}
+   - \newcommand{\factorIntensive}{\texttt{factorIntensive}\xspace}
+   - \newcommand{\factorHospital}{\texttt{factorHospital}\xspace}
+   - \newcommand{\intensiveBed}{\texttt{intensiveBed}\xspace}
+   - \newcommand{\intensiveBedVentilation}{\texttt{intensiveBedVentilation}\xspace}
+   - \newcommand{\FactorPatientsVentilationToDeath}{\texttt{FactorPatientsVentilationToDeath}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToVentilation}{\texttt{FactorPatientsIntensiveToVentilation}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToDeath}{\texttt{FactorPatientsIntensiveToDeath}\xspace}
+   - \newcommand{\FactorPatientsIntensiveToAftercare}{\texttt{FactorPatientsIntensiveToAftercare}\xspace}
+   - \newcommand{\FactorPatientsNormalToIntensive}{\texttt{FactorPatientsNormalToIntensive}\xspace} 
+   - \newcommand{\FactorPatientsNormalToDeath}{\texttt{FactorPatientsNormalToDeath}\xspace}
+   - \newcommand{\FactorPatientsNormalToVentilation}{\texttt{FactorPatientsNormalToVentilation}\xspace}
+   - \newcommand{\FactorPatientsNormalToHealed}{\texttt{FactorPatientsNormalToHealed}\xspace}
+   - \newcommand{\FactorPatientsHospitalToNormal}{\texttt{FactorPatientsHospitalToNormal}\xspace}  
+   - \newcommand{\FactorPatientsHospitalToIntensive}{\texttt{FactorPatientsHospitalToIntensive}\xspace}   
+   - \newcommand{\FactorPatientsHospitalToVentilation}{\texttt{FactorPatientsHospitalToVentilation}\xspace}  
+   - \newcommand{\FactorPatientsHospitalToDeath}{\texttt{FactorPatientsHospitalToDeath}\xspace}  
+   - \newcommand{\FactorPatientsInfectedToAmbulant}{\texttt{FactorPatientsInfectedToAmbulant}\xspace} 
+   - \newcommand{\FactorPatientsInfectedToHealthy}{\texttt{FactorPatientsInfectedToHealthy}\xspace} 
+   - \newcommand{\FactorPatientsInfectedToHospital}{\texttt{FactorPatientsInfectedToHospital}\xspace} 
+   - \newcommand{\AmntNursesPerPatient}{\texttt{AmntNursesPerPatient}\xspace}
+   - \newcommand{\AmntInfectedPerDay}{\texttt{AmntInfectedPerDay}\xspace}
+   - \newcommand{\AmntInfectedPerDayCum}{\texttt{AmntInfectedPerDayCum}\xspace}
+   - \newcommand{\AmntDaysVentilationToAftercare}{\texttt{AmntDaysVentilationToAftercare}\xspace}
+   - \newcommand{\AmntDaysIntensiveToAftercare}{\texttt{AmntDaysIntensiveToAftercare}\xspace}
+   - \newcommand{\AmntDaysIntensiveToDeath}{\texttt{AmntDaysIntensiveToDeath}\xspace}
+   - \newcommand{\AmntDaysIntensiveToVentilation}{\texttt{AmntDaysIntensiveToVentilation}\xspace}
+   - \newcommand{\AmntDaysAmbulant}{\texttt{AmntDaysAmbulant}\xspace}
+   - \newcommand{\StartDate}{\texttt{StartDate}\xspace}
+   - \newcommand{\aftercare}{\texttt{aftercare}\xspace}
+   - \newcommand{\intensive}{\texttt{intensive}\xspace}
+   - \newcommand{\ventilation}{\texttt{ventilation}\xspace}
+   - \newcommand{\ambulant}{\texttt{ambulant}\xspace}
+   - \newcommand{\normalStation}{\texttt{normalStation}\xspace}
+   - \newcommand{\hospital}{\texttt{hospital}\xspace}
+   - \newcommand{\infected}{\texttt{infected}\xspace}
+   - \newcommand{\death}{\texttt{death}\xspace}
+   - \newcommand{\transferout}{\texttt{transferout}\xspace} 
+   - \newcommand{\intensiveAfter}{\texttt{intensiveAfter}\xspace}
+date: "`r Sys.Date()`"
+output:
+   rmarkdown::html_vignette:
+      fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{Hospital Capacity Planning Using Discrete Event Simulation: Synthetic Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---   
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+* Resource and capacity planning for hospitals.
+* Paper from Lawton.
+
+\cite{Desv20a}
+
+
+## Materials and Methods
+
+```{r loadBabsim, include=FALSE}
+require("vctrs")
+require("slider")
+require("dplyr")
+require("parallel")
+require("simmer")
+require("simmer.plot")
+require("ggplot2")
+require("lubridate")
+require("reshape2")
+require("tidyverse")
+require("plotly")
+require("babsim.hospital")
+```
+
+
+```{r SPOT, eval = FALSE}
+## install.packages("devtools")
+## devtools::install_github("r-lib/devtools")
+url <- "http://owos.gm.fh-koeln.de:8055/bartz/spot.git"
+devtools::install_git(url = url)
+
+library(SPOT)
+packageVersion("SPOT")
+```
+
+
+
+
+## Synthetic Data
+
+In this case, no data is available. Sim and Field data will be generated
+synthetically.
+The function `getSyntheticData` uses the following default parameters:
+
+*  StartDate = "2020-09-01",
+*  EndDate = "2020-11-30",
+*  lambda = 4,
+*  peakData = c(21, 50, 28, 40, 42, 50),
+*  amntDaysSickness = 20,
+*  hospitalizationRates = list(rBed = 0.1347, rIntensiveBed = 0.004,
+    rIntensiveBedVentilation = 0.0171)
+
+It generates a list that contains two data frames: 
+1. simData and 
+2. field data.
+```{r, getSynthetic}
+data <- getSyntheticData()
+```
+
+
+```{r, performSim}
+conf <- getConfFromData(simData = data$simData,
+                        fieldData = data$fieldData) 
+para <- babsimHospitalPara()
+arrivalTimes <- getArrivalTimes(data$simData$Infected)
+
+envs <- babsimHospital(arrivalTimes = arrivalTimes,
+                    conf = conf,
+                    para = para)
+```
+
+
+```{r, plotSynthResources}
+resources <- get_mon_resources(envs)
+resources$capacity <- resources$capacity/1e5
+plot(resources, metric = "usage", conf$ResourceNames, items = "server")
+```
+
+
+```{r, compareToReal}
+fieldEvents <- getRealBeds(data = data$fieldData)
+res <- getDailyMaxResults(envs = envs,  
+                          fieldEvents = fieldEvents,
+                          conf = conf)
+## save as default:
+(errDefault <- getError(res))
+```
+
+
+```{r, plotSynthResults}
+plotDailyMaxResults(res)
+```
+
+## Optimization (to be used from the command line in the folder Run.d)
+```{r, eval= FALSE}
+expName <- "synthNoise35"
+require("SPOT")
+require("babsim.hospital")
+require("simmer")
+##########################################################
+data <- getSyntheticData()
+###########################################################
+## n = number of function evaluations, Anzahl der 30-dim x Vektoren, die getestet werden
+n = 35
+## k = Groesse des initialen Designs für SPOT (k < n)
+k = 30
+## m = Anzahl der Simulationswiederholungen für Simnf
+m = 2
+## parallele Auswertung?
+PARALLEL = FALSE
+##
+ICU = FALSE
+##
+PERCORES = 0.5
+## Anzahl der Punkte, die von SPOT fuer das Metamodell verwendet werden. Sollte
+## fuer Kriging nicht zu gross gewählt werden (<100):
+SUBSET = 50
+#############################################################
+x0 <- getStartParameter()
+bounds <- getBounds()
+conf <- getConfFromData(simData = data$simData,
+                        fieldData = data$fieldData) 
+set.seed(conf$seed)
+conf$parallel = PARALLEL
+conf$simRepeats = m
+conf$ICU = ICU
+conf$percCores = PERCORES
+conf$logLevel =1
+FILENAME <-  paste0("../Results.d/run", expName, ".RData")
+assign( expName, 
+        spot(
+          x = x0,
+          fun = funWrapOptimizeSim,
+          lower = bounds$lower,
+          upper = bounds$upper,
+          control = list(
+            funEvals = n,
+            noise = TRUE,
+            optimizer = optimLBFGSB,
+            model =  buildKriging,
+            plots = FALSE,
+            progress = TRUE,
+            subsetSelect = selectN,
+            subsetControl = list(N = SUBSET),
+            designControl = list(size = k)
+          ),
+          conf = conf,
+          data = data
+        )
+)
+# save(list = eval(parse(text = "expName")) , file = FILENAME)
+```
+
+
+
+# Performing Simulations Based on Artificial Data
+
+* The functions described above are implemented in the `babsim` package. 
+* First, we use  artificial data from  the ex1InfectedDf data frame.
+
+
+```{r, eval = FALSE, include= FALSE}
+# Scenario 1a
+amntDaysSickness = 20
+dates <- seq(from=as.Date(StartDate), to = as.Date(EndDate), by = "1 day")
+AmntInfectedPerDay = 4
+peakData = c(10,100,21,50)
+infectedPerDay <- getInfectedPerDay(lambda=AmntInfectedPerDay) + getPeakVec(peakData)
+infectedPerDayCum <- cumsum(infectedPerDay)
+sickPerDay <-  slide_dbl(infectedPerDay, ~sum(.x), .before = (amntDaysSickness -1))
+ex1InfectedDf <- data.frame(index = 1:length(infectedPerDay), Day=dates, Infected= infectedPerDay, Sick = sickPerDay, InfectedCum = infectedPerDayCum)
+head(ex1InfectedDf)
+```
+```{r plotEx1df}
+plot(ex1InfectedDf$Infected ~ex1InfectedDf$Day, type = "l")
+```
+
+```{r getEx1ArrivalTimesDf}
+ex1ArrivalTimesDf <- data.frame(getArrivalTimes(ex1InfectedDf$Infected) )
+```
+
+
+
+* These arrival times are passed to the `babsimHospital` function.
+
+```{r callex1, include= TRUE}
+conf <- babsimToolsConf()
+
+conf$simRepeats = 2
+y <- babsimHospital(arrivalTimes = ex1ArrivalTimesDf
+                   , conf = conf  
+                   , para = babsimHospitalPara()
+                   )
+
+```
+
+
+#### How to Evaluate Results
+
+##### Simulate Beds:
+* Proportion of the sick individuals define the number of 
+  1. beds (\normalStation): $0.1347$
+  2. intensive beds (\intensive): $0.004$
+  3. intensive beds with ventilation (\ventilation): $0.0171$
+
+```{r compareWithExcel}
+ex1InfectedDf$normalStation <- round(0.1347 * ex1InfectedDf$Sick)       
+ex1InfectedDf$intensive <- round(0.004 * ex1InfectedDf$Sick)       
+ex1InfectedDf$ventilation <- round(0.0171 * ex1InfectedDf$Sick)       
+str(ex1InfectedDf)
+{plot(ex1InfectedDf$Sick ~ ex1InfectedDf$Day, type = "l")
+lines(ex1InfectedDf$Infected ~ ex1InfectedDf$Day, type = "l")
+lines(ex1InfectedDf$normalStation ~ ex1InfectedDf$Day, type = "l")
+lines(ex1InfectedDf$intensive ~ ex1InfectedDf$Day, type = "l")
+lines(ex1InfectedDf$ventilation ~ ex1InfectedDf$Day, type = "l")}
+```
+
+
+
+* To evaluate the simulated results, we extract the real data.
+* To prepare real data, we select the real (field) data from the `obk` data set. 
+* There are three different ways, how the field data were collected. We chose the data from GA (Gesundheitsamt):
+```{r getex1Beds}
+ex1BedData <- data.frame(bed = ex1InfectedDf$normalStation, 
+                         intensiveBed = ex1InfectedDf$intensive, 
+                         intensiveBedVentilation = ex1InfectedDf$ventilation, 
+                         Day = ex1InfectedDf$Day)       
+ex1Beds <- getRealBeds(data = ex1BedData,  resource=c("bed", "intensiveBed", "intensiveBedVentilation"))
+```
+
+
+```{r getex1DailyMaxRes}
+res <- getDailyMaxResults(
+  envs = y,  
+  fieldEvents = ex1Beds)
+```
+
+
+```{r plotex1}
+p <- plotDailyMaxResults(res)
+print(p)
+```
+
+
+```{r, eval= FALSE}
+ggplotly(p)
+```
+
+
+#### Example 2
+
+* Everybody goes home, no resources required:
+
+```{r ex2Arrivals}
+ex2I <- ex1InfectedDf
+ex2A <- ex1ArrivalTimesDf
+```
+
+
+```{r emptyResources}
+  conf <- babsimToolsConf()
+  para <- babsimHospitalPara()
+  para$FactorPatientsInfectedToHealthy <- 1.0
+  para$FactorPatientsInfectedToHospital <- 0.0
+  y <- babsimHospital(arrivalTimes = ex2A
+                      , conf = conf
+                      , para = para
+)
+  #
+  resources <- get_mon_resources(y)
+nrow(resources) == 0
+```
+
+
+####  Example 3
+
+* $N$ infected patients arrive.
+* Everybody goes to the \normal station and recovers
+* Therefore: only $N$ \beds are occupied. The number of required beds is calculated via the following code (it should be $N$).
+```{r calcBeds, eval=FALSE}
+s <- resources$server
+s <- c(0,s)
+d <- diff(s)
+```
+
+
+
+```{r}
+# N is the number of patients
+N = 5
+ex3I <- ex1InfectedDf
+ex3A <- data.frame(time = ex1ArrivalTimesDf[1:N,])
+
+ para <- babsimHospitalPara()
+  para$FactorPatientsInfectedToHealthy <- 0.0
+  para$FactorPatientsInfectedToHospital <- 1.0
+  #
+  para$FactorPatientsHospitalToIntensive <- 0.0
+  para$FactorPatientsHospitalToVentilation <- 0.0
+  para$FactorPatientsHospitalToNormal <- 1.0
+  #
+  para$FactorPatientsNormalToIntensive <- 0.0
+  para$FactorPatientsNormalToVentilation <- 0.0
+  para$FactorPatientsNormalToDeath <- 0.0
+  para$FactorPatientsNormalToHealthy <- 1.0
+ 
+  y <- babsimHospital(arrivalTimes = ex3A
+                      , conf = conf
+                      , para = para)
+  #
+  resources <- get_mon_resources(y)
+  s <- resources$server
+  s <- c(0,s)
+  d <- diff(s)
+N == sum(d[d > 0])
+print(resources)
+```
+
+
+####  Example 4
+
+* $N$ infected patients arrive.
+* Everybody goes to the 
+   1. \normal station, then 
+   2. \intensive station
+   3. \ventilation
+   4. \intensiveAfter
+   5. \aftercare
+and is healed.
+
+```{r}
+# N is the number of patients
+N = 10
+set.seed(123)
+ex4I <- ex1InfectedDf
+ex4A <- data.frame(time = ex1ArrivalTimesDf[1:N,])
+
+para <- babsimHospitalPara()
+para$FactorPatientsInfectedToHealthy <- 0.0
+para$FactorPatientsInfectedToHospital <- 1.0
+#
+para$FactorPatientsHospitalToIntensive <- 0.0
+para$FactorPatientsHospitalToVentilation <- 0.0
+para$FactorPatientsHospitalToNormal <- 1.0
+#
+para$FactorPatientsNormalToIntensive <- 1.0
+para$FactorPatientsNormalToVentilation <- 0.0
+para$FactorPatientsNormalToDeath <- 0.0
+para$FactorPatientsNormalToHealthy <- 0.0
+#
+para$FactorPatientsIntensiveToVentilation <- 1.0
+para$FactorPatientsIntensiveToAftercare <- 0.0
+para$FactorPatientsIntensiveToDeath <- 0.0
+para$FactorPatientsIntensiveToHealthy <- 0.0
+#
+para$FactorPatientsVentilationToIntensiveAfter <- 1.0
+para$FactorPatientsVentilationToAftercare <- 0.0
+para$FactorPatientsVentilationToDeath <- 0.0
+#
+para$FactorPatientsIntensiveAfterToAftercare <- 1.0
+para$FactorPatientsIntensiveAfterToHealthy <- 0.0
+para$FactorPatientsIntensiveAfterToDeath <- 0.0
+
+conf$logLevel = 1
+
+y <- babsimHospital(arrivalTimes = ex4A
+                    , conf = conf
+                    , para = para)
+#
+resources <- get_mon_resources(y)
+s <- resources[resources$resource=="bed",]$server
+s <- c(0,s)
+d <- diff(s)
+2*N == sum(d[d > 0])
+print(resources)
+```
+
+
+
+
+
+
+
+```{r, eval = FALSE}
+#
+ex1BedData <- data.frame(bed=ex1df$normalStation, 
+                         intensivBed=ex1df$intensive, 
+                         intensiveBedVentilation=ex1df$ventilation,
+                         Day=ex1df$Day)       
+ex1Beds <- getRealBeds(data = ex1BedData,  resource=c("bed", "intensiveBed", "intensiveBedVentilation"))
+
+resources$time <- round(resources$time) ## Round Time to single days!
+## Resource requirement of a day is set to the maximum of that day
+resourcesMaxSystem <- resources %>% group_by(resource, time, replication) %>% slice(which.max(system))
+  ## If there are replicates, look for median, worst and best case scenario
+  resourcesMaxSystem <- resources %>% group_by(resource, time) %>%  mutate(upper = max(system)) %>%
+    mutate(lower = min(system)) %>% mutate(med = median(system))
+  ## Cutoff date for plotting
+  ### resourcesMaxSystem <- resourcesMaxSystem %>% filter(time <= (observedPeriod + as.numeric(as.Date(StartDateSimulation) - as.Date(StartDate))))
+  resourcesMaxSystem <- resourcesMaxSystem %>% filter(time <= (observedPeriod))
+  resourcesMaxSystem$date<-as.POSIXct((resourcesMaxSystem$time-min(resourcesMaxSystem$time))*24*60*60,origin=StartDate)
+  resourcesMaxSystem$rwdate<-round_date(resourcesMaxSystem$date,unit="week")
+
+  ## Add simulations from other sources to plots
+  resourcesMaxSystem$source = "babsim"
+  resourcesMaxSystem <- resourcesMaxSystem %>% filter(resource != "nurse")
+  resourcesMaxSystem <- bind_rows(resourcesMaxSystem, fieldData = ex1Beds)
+#
+res <- getDailyMaxResults(
+  envs = y,  
+  fieldData = ex1Beds)
+#
+p <- plotDailyMaxResults(res)
+print(p)
+```
+
+
+
+#### How to Plot Results From Real Simulation:
+
+```{r}
+p <- plotDailyMaxResults(res)
+print(p)
+```
+
+
+
+```{r, eval= FALSE}
+ggplotly(p)
+```
+
+
+
+
+\bibliography{../bab-bibfiles/bartzAll.bib}
