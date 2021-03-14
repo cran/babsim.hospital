@@ -114,7 +114,6 @@ require("simmer")
 require("simmer.plot")
 require("ggplot2")
 require("lubridate")
-require("reshape2")
 require("tidyverse")
 require("plotly")
 require("babsim.hospital")
@@ -161,12 +160,14 @@ The function `getObkData` generates a list that contains two data frames:
 data <- getObkData()
 simData <- data$simData
 fieldData  <- data$fieldData
+conf <- babsimToolsConf()
 ```
 
 Perform the simulation
 
 ```{r, performObKSim}
-conf <- getConfFromData(simData = simData,
+conf <- getConfFromData(conf = conf,
+                        simData = simData,
                         fieldData = fieldData)
 set.seed(conf$seed)
 para <- babsimHospitalPara()
@@ -188,10 +189,11 @@ plot(resources, metric = "usage", conf$ResourceNames, items = "server")
 Get real data (field data)
 
 ```{r, CombineSimField}
-fieldEvents <- getRealBeds(data = fieldData)
-res <- getDailyMaxResults(envs = envs,  fieldEvents = fieldEvents)
+fieldEvents <- getRealBeds(data = fieldData,
+                           resource=c('bed', 'intensiveBed', 'intensiveBedVentilation'))
+res <- getDailyMaxResults(conf=conf, envs = envs,  fieldEvents = fieldEvents)
 ## save as default:
-(errDefault <- getError(res))
+(errDefault <- getError(conf=conf, res))
 ```
 
 
@@ -385,6 +387,7 @@ y <- babsimHospital(arrivalTimes = arrivalTimes
 
 ```{r getDailyMaxRes}
 res <- getDailyMaxResults(
+   conf=conf,
   envs = y,  
   fieldEvents = GABeds)
 ```
@@ -426,7 +429,7 @@ return(rmseBed + rmseIntensiveBed + rmseIntensiveBedVentilation)
 * We calculate the error as the combined error from the three different bed categories:
 
 ```{r getErrorVal, eval = TRUE}
-getError(res)
+getError(conf=conf, res)
 ```
 
 
@@ -572,9 +575,10 @@ y2 <- babsimHospital(arrivalTimes = arrivalTimes
 
 ```{r}
 res2 <- getDailyMaxResults(
+   conf=conf,
   envs = y2,  
   fieldEvents = GABeds)
-getError(res2)
+getError(conf=conf, res2)
 ```
 ```{r}
 p <- plotDailyMaxResults(res2)

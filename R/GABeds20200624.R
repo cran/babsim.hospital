@@ -1,19 +1,19 @@
 
 ###################################################################################
 #' @title  GABeds220200624 Intensivbetten: Daten vom 24.6.2020
-#' 
+#'
 #' @description Betten Daten aggregiert
-#' 
+#'
 #'
 #' Ein data.frame  mit 5 Variablen
 #'
 #' @format data.frame with 342 obs. of  5 variables:
 #' \describe{
-#'   \item{ressource}{chr  "bed" "bed" "bed" "bed" ...}
+#'   \item{ressource}{chr  'bed' 'bed' 'bed' 'bed' ...}
 #'   \item{time}{int  1 2 3 4 5 6 7 8 9 10 ...}
 #'   \item{med}{int  2 2 3 3 3 3 3 3 4 4 ...}
 #'   \item{source}{int  2 2 3 3 3 3 3 3 4 4 ...}
-#'   \item{date}{Date, format: "2020-03-03" "2020-03-04" "2020-03-05" "2020-03-06" ...}
+#'   \item{date}{Date, format: '2020-03-03' '2020-03-04' '2020-03-05' '2020-03-06' ...}
 #' }
 #'
 ###################################################################################

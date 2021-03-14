@@ -16,7 +16,7 @@ babsimHospital(arrivalTimes = NULL, conf = list(), para = list(), ...)
 \item{\code{parallel}}{simmer parallel runs. Default: FALSE}
 \item{\code{perCores}}{percentage of cores used for parallel simmer simulations. Default: 0.5 (=50 percent)}
 \item{\code{ICU}}{use ICU infection data. Default: FALSE}
-\item{\code{logLevel}}{log leved (0 or 1). Default: 0 (no output)}
+\item{\code{logLevel}}{log leved (0 or 1). Default: 0 (no output)}. Values larger than 1 are mapped to 1.
 }}
 
 \item{para}{List with parameter settings. Can be generated with \code{\link{babsimHospitalPara}}.}
@@ -26,8 +26,8 @@ babsimHospital(arrivalTimes = NULL, conf = list(), para = list(), ...)
 \value{
 This function returns an env list with:
 \describe{
-	\item{\code{xbest}}{Parameters of the best found solution (matrix).}
-}
+		\item{\code{xbest}}{Parameters of the best found solution (matrix).}
+	}
 }
 \description{
 Simulate resource allocation in hospitals.
@@ -36,28 +36,31 @@ Simulate resource allocation in hospitals.
 
 require("simmer")
 require("dplyr")
-# Generate simulation data based on number of infected persons per day: 
+# Generate simulation data based on number of infected persons per day:
 x <- dataCovidBeds20200624
-arrivalTimes <- getArrivalTimes(x$Infected) 
-conf = babsimToolsConf()
-y <- babsimHospital(arrivalTimes = arrivalTimes,
-                   conf = babsimToolsConf(),
-                   para = babsimHospitalPara())
+arrivalTimes <- getArrivalTimes(x$Infected)
+conf <- babsimToolsConf()
+y <- babsimHospital(
+  arrivalTimes = arrivalTimes,
+  conf = conf,
+  para = babsimHospitalPara()
+)
 resources <- get_mon_resources(y)
 # resources <- resources \%>\% filter(resource != "nurse")
 mean(resources$server)
 
 ## 2nd example (shows details):
-# Generate simulation data based on number of infected persons per day: 
+# Generate simulation data based on number of infected persons per day:
 x <- dataCovidBeds20200624
-arrivalTimes <- getArrivalTimes(x$Infected) 
+arrivalTimes <- getArrivalTimes(x$Infected)
 para <- babsimHospitalPara()
 conf <- babsimToolsConf()
-conf$logLevel = 1
-conf$simRepeats = 1
-para$GammaShapeParameter = 0.8 
-y <- babsimHospital(arrivalTimes = arrivalTimes, 
-                    conf = conf, 
-                    para = para)
-
+conf$logLevel <- 1
+conf$simRepeats <- 1
+para$GammaShapeParameter <- 0.8
+y <- babsimHospital(
+  arrivalTimes = arrivalTimes,
+  conf = conf,
+  para = para
+)
 }

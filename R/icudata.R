@@ -1,40 +1,21 @@
 
 ###################################################################################
-#' @title  icudata IntensivbettenDaten (aktueller Stand)
+#' @title  icudata IntensivbettenDaten (Beispieldatensatz)
 #' 
-#' @description ICU Daten bundesweit
+#' @description ICU Beispiel-Datensatz (nur für Demonstrationszwecke).
+#' Der Beispieldatensatz \code{icudata} dient nur zu Demonstrationszwecken.
+#' Er besitzt das gleiche Format wie Tagesreports des DIVI Intensivregisters, siehe
+#' \code{https://www.divi.de/register/tagesreport}. 
+#' Ziel des DIVI-Intensivregisters ist, 
+#' die Verfügbarkeiten von Beatmungsbetten und von erweiterten Therapiemaßnahmen 
+#' bei akutem Lungenversagen in Deutschland sichtbar zu machen. 
+#' Eine weitere wissenschaftliche Nutzung der Daten ist nur mit Zustimmung der DIVI gestattet. 
+#' Bitte kontaktieren Sie die wissenschaftliche Leitung des DIVI-Intensivregisters. 
+#' Please contact DIVI e.V. if you are interested in the full data:
+#' \code{https://www.divi.de/register/anprechpartner-register}
 #' 
-#' @details 1. Heruntergeladen mittels 
-#' \code{getDiviData}
-#' 2. Manuell kopiert in den Ordner All
-#' 3. Eingelesen  mittels \code{
-#' icudata <- readCsvRecursively(path="All", pattern="download")
-#' }
-#' 4. Weiterverarbeitung  mittels \code{\link{getIcuBeds}} 
-#' \code{icu <- icudata
-#' icuCov <- as.data.frame(xtabs( faelle_covid_aktuell ~  daten_stand, icu)) 
-#' icuCov$daten_stand <- as.Date(icuCov$daten_stand)
-#' icuCovBeatm <- as.data.frame(xtabs(faelle_covid_aktuell_beatmet ~ daten_stand, icu)) 
-#' icuCovBeatm$daten_stand <- as.Date(icuCovBeatm$daten_stand)
-#' dataICUBeds <- data.frame(bed=(icuCov$Freq - icuCovBeatm$Freq), intensiveBedVentilation=icuCovBeatm$Freq, Day =  as.Date(icuCovBeatm$daten_stand))
-#' }
-#' Oder  Weiterverarbeitung z.B. mit:
-#' \code{library(padr)
-#' icu <- pad(icudata,interval="day")
-#' icuCov <- as.data.frame(xtabs( faelle_covid_aktuell ~ daten_stand, icu))
-#' icuCovBeatm <- as.data.frame(xtabs( faelle_covid_aktuell_beatmet   ~ daten_stand, icu))
-#' icuCovBett <- as.data.frame(xtabs( betten_belegt   ~ daten_stand, icu))
-#' plot(icuCov$daten_stand, icuCov$Freq, type = "p", xlab = "Tag", ylab="COVID ", main= "COVID-Fälle in Behandlung im KHaus")
-#' plot(icuCovBeatm$daten_stand, icuCovBeatm$Freq, type = "p", xlab = "Tag", ylab="Patienten", main="Beatmete COVID-19-Pat. nur invasive Beatmung und ECMO")
-#' plot(icuCovBett$daten_stand, icuCovBett$Freq, type = "l", xlab = "Tag", ylab="ICU Betten belegt")
-#' }
-#' Oder nur die Betten des OBK:
-#' \code{
-#' icu20200915Obk <- icu[icu$gemeindeschluessel==05374, ]
-#' }
+#' @details A sample of the ICU data
 #' 
-#'
-#'
 #' @format data.frame of 9 variables
 #' \describe{
 #'   \item{bundesland}{ int  1 1 1 1 1 1 1 1 1 1 ...}

@@ -102,7 +102,6 @@ library("SPOT")
 library("babsim.hospital")
 library("simmer")
 library("simmer.plot")
-library("plotly")
 })
 ```
 
@@ -222,6 +221,12 @@ print(p[[1]])
 print(p[[2]])
 ```
 
+## Additional Data
+
+### GV-ISys: Gemeindeverzeichnis-Informationssystem (GV-ISys) of the German Federal Statistics Office
+
+* Gemeindeverzeichnis-Informationssystem (GV-ISys) of the German Federal Statistics Office, see [https://www.destatis.de/DE/Themen/Laender-Regionen/Regionales/Gemeindeverzeichnis/](https://www.destatis.de/DE/Themen/Laender-Regionen/Regionales/Gemeindeverzeichnis/)
+
 ## Preprocessing DIVI/ICU Data
 
 *Note*: ICU beds without ventilation can be calculated as `faelle_covid_aktuell - faelle_covid_aktuell_beatmet`.
@@ -302,7 +307,7 @@ conf$ICU = icu
 conf$ResourceNames = resourceNames
 conf$ResourceEval = resourceEval
 conf$percCores = percCores
-conf$logLevel = 1
+conf$logLevel = 0
 conf$w2 = icuWeights
 set.seed(conf$seed)
 ```
@@ -434,7 +439,7 @@ plot(p)
 * Using `ggplot` and `plotly`can be used to generate interactive plots.
 
 ```{r, interactiveGGplotly, eval = FALSE}
-ggplotly(p) 
+plotly::ggplotly(p) 
 ```
 
 
@@ -489,13 +494,13 @@ res202010262 <- runoptDirect(
 )
 ```
 
-* Results from the `runopt()` runs are stored as `*.rda` files.
+* Results from the `runopt()` runs are stored in the `paras.rda` file.
 * `babsim.hospital` provides results from the following regions (towns and 
  counties in Germany):
-   * `obkpara`: Oberbergischer Kreis
-   * `koelnpara`: City of Cologne
-   * `nrwpara`: North-Rhine Westphalia
-   * `deutschland`: Germany
+   * `getParaSet(5374)`: Oberbergischer Kreis
+   * `getParaSet(5315)`: City of Cologne
+   * `getParaSet(5)`: North-Rhine Westphalia
+   * `getParaSet(0)`: Germany
 
 
 ## Use Optimized Parameters
@@ -504,7 +509,7 @@ res202010262 <- runoptDirect(
 as follows:
 
 ```{r, eval=FALSE}
-para <- getBestParameter(babsim.hospital::koelnpara)
+para <- getBestParameter(getParaSet(5315))
 res <- modelResultHospital(para=para, 
                            conf=conf,
                            data = data)
@@ -522,7 +527,7 @@ print(p)
 * `ggplot` and `plotly`can be used to generate interactive plots.
 
 ```{r, showGgplotly, eval = FALSE}
-ggplotly(p)
+plotly::ggplotly(p)
 ```
 
 
@@ -539,8 +544,8 @@ ggplotly(p)
 * return Weighted parameter set
 
 ```{r smooth, eval = FALSE}
-para <- smoothParameter(getBestParameter(babsim.hospital::obkpara), 
-                getBestParameter(babsim.hospital::nrwpara) )
+para <- smoothParameter(getBestParameter(getParaSet(5374)), 
+                getBestParameter(getParaSet(5)) )
 ```
 
 
@@ -646,7 +651,7 @@ library("rpart")
 library("rpart.plot")
 library("babsim.hospital")
 library("SPOT")
-param <- obkpara
+param <- getParaSet(5374)
 n <- dim(param)[2] - 1
 y <- param[,1]
 x <- param[,2:dim(param)[2]]
@@ -663,7 +668,7 @@ getParameterNameList(c(24, 25, 3, 10))
 ```{r, quickAnalysisKoeln, eval = FALSE}
 library("rpart")
 library("rpart.plot")
-param <- koelnpara
+param <- getParaSet(5315)
 n <- dim(param)[2] - 1
 y <- param[,1]
 x <- param[,2:dim(param)[2]]

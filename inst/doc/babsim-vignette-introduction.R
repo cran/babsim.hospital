@@ -11,7 +11,6 @@ library("SPOT")
 library("babsim.hospital")
 library("simmer")
 library("simmer.plot")
-library("plotly")
 })
 
 ## ----loadSPOT, eval = TRUE----------------------------------------------------
@@ -94,7 +93,7 @@ conf$ICU = icu
 conf$ResourceNames = resourceNames
 conf$ResourceEval = resourceEval
 conf$percCores = percCores
-conf$logLevel = 1
+conf$logLevel = 0
 conf$w2 = icuWeights
 set.seed(conf$seed)
 
@@ -138,7 +137,7 @@ resDefault <- getError(res, conf=conf)
 #  plot(p)
 
 ## ---- interactiveGGplotly, eval = FALSE---------------------------------------
-#  ggplotly(p)
+#  plotly::ggplotly(p)
 
 ## ----eval=FALSE---------------------------------------------------------------
 #  para <- babsimHospitalPara()
@@ -175,7 +174,7 @@ resDefault <- getError(res, conf=conf)
 #  )
 
 ## ---- eval=FALSE--------------------------------------------------------------
-#  para <- getBestParameter(babsim.hospital::koelnpara)
+#  para <- getBestParameter(getParaSet(5315))
 #  res <- modelResultHospital(para=para,
 #                             conf=conf,
 #                             data = data)
@@ -186,11 +185,11 @@ resDefault <- getError(res, conf=conf)
 #  print(p)
 
 ## ---- showGgplotly, eval = FALSE----------------------------------------------
-#  ggplotly(p)
+#  plotly::ggplotly(p)
 
 ## ----smooth, eval = FALSE-----------------------------------------------------
-#  para <- smoothParameter(getBestParameter(babsim.hospital::obkpara),
-#                  getBestParameter(babsim.hospital::nrwpara) )
+#  para <- smoothParameter(getBestParameter(getParaSet(5374)),
+#                  getBestParameter(getParaSet(5)) )
 
 ## ---- showMatrixP-------------------------------------------------------------
 para <- babsimHospitalPara()
@@ -226,7 +225,7 @@ dataExt <- extendRki(data = data,
 #  library("rpart.plot")
 #  library("babsim.hospital")
 #  library("SPOT")
-#  param <- obkpara
+#  param <- getParaSet(5374)
 #  n <- dim(param)[2] - 1
 #  y <- param[,1]
 #  x <- param[,2:dim(param)[2]]
@@ -241,7 +240,7 @@ dataExt <- extendRki(data = data,
 ## ---- quickAnalysisKoeln, eval = FALSE----------------------------------------
 #  library("rpart")
 #  library("rpart.plot")
-#  param <- koelnpara
+#  param <- getParaSet(5315)
 #  n <- dim(param)[2] - 1
 #  y <- param[,1]
 #  x <- param[,2:dim(param)[2]]

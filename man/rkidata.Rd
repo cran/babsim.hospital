@@ -3,7 +3,7 @@
 \docType{data}
 \name{rkidata}
 \alias{rkidata}
-\title{rkidata: Aktuelle RKI COVID-19 Daten}
+\title{rkidata: RKI COVID-19 Daten (complete, not included in CRAN version)}
 \format{
 a data.frame of of  18 variables
  \describe{
@@ -31,10 +31,10 @@ a data.frame of of  18 variables
 rkidata
 }
 \description{
-RKI Daten
+RKI Daten komplett
 }
 \details{
-Heruntergeladen mittels 
+Heruntergeladen  mittels 
 \code{wget https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data}
 Eingelesen mittels \code{rkidata <- read.csv("data", header=TRUE,encoding="UTF-8")}
 Eingepflegt mittel \code{usethis::use_data(rkidata)}

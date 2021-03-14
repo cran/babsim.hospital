@@ -1,7 +1,51 @@
 # babsim.hospital
 ## Release Policy:
-  * Even release numbers refer to unstable versions, e.g., 1.5.3.12
-  
+  * Even release numbers refer to unstable versions, e.g., 1.5.12
+
+## 11.7.12
+   * BUGFIX:
+    Found the following (possibly) invalid URLs:
+    URL: https://www.destatis.de/DE/Themen/Laender-Regionen/Regionales/Gemeindeverzeichnis/_inhalt.html
+     From: man/GermanCounties.Rd
+           man/GermanStates.Rd
+     Status: 400
+     Message: Bad Request
+
+
+## 11.7.10
+   * CHANGES:
+      * icudata.R, icudataFull.R, rkidata.R, and rkidataFull.R files added 
+
+## 11.7.8
+   * BUGFIX
+      * mc.coresN is handled correctly
+      * babsimHospital example uses conf correctly
+
+## 11.7.6
+  * BUGFIX: 
+     * meesagef messageDataRange are exported
+
+## 11.7.4
+   * NEW:
+      * vaccine counts added
+
+## 11.7.2
+   * package plotly not suggested anymore
+
+## 11.7.0
+   * New data structures
+
+## 11.6.0
+   * Improved prediction /conf intervals
+
+## 11.5.18
+   * more regions
+   * envToTibble does not use a default conf argument
+
+## 11.5.16
+  * Faster evalutions:
+     * getDecision() rewritten
+     * updateP() rewritten
   
 ## 11.5.14
   * CRAN comments fixed

@@ -115,7 +115,6 @@ require("simmer")
 require("simmer.plot")
 require("ggplot2")
 require("lubridate")
-require("reshape2")
 require("tidyverse")
 require("plotly")
 require("babsim.hospital")
@@ -158,7 +157,8 @@ data <- getSyntheticData()
 
 
 ```{r, performSim}
-conf <- getConfFromData(simData = data$simData,
+conf <- babsimToolsConf()
+conf <- getConfFromData(conf=conf, simData = data$simData,
                         fieldData = data$fieldData) 
 para <- babsimHospitalPara()
 arrivalTimes <- getArrivalTimes(data$simData$Infected)
@@ -177,12 +177,13 @@ plot(resources, metric = "usage", conf$ResourceNames, items = "server")
 
 
 ```{r, compareToReal}
-fieldEvents <- getRealBeds(data = data$fieldData)
+fieldEvents <- getRealBeds(data = data$fieldData,resource=c('bed', 'intensiveBed', 'intensiveBedVentilation')
+)
 res <- getDailyMaxResults(envs = envs,  
                           fieldEvents = fieldEvents,
                           conf = conf)
 ## save as default:
-(errDefault <- getError(res))
+(errDefault <- getError(conf=conf, res))
 ```
 
 
@@ -330,6 +331,7 @@ ex1Beds <- getRealBeds(data = ex1BedData,  resource=c("bed", "intensiveBed", "in
 
 ```{r getex1DailyMaxRes}
 res <- getDailyMaxResults(
+  conf=conf,
   envs = y,  
   fieldEvents = ex1Beds)
 ```

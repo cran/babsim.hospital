@@ -107,7 +107,7 @@ vignette: >
 * The states, durations, and transition probabilities are visualized in Fig.~\ref{fig:20200803states}
 
 ```{r simmerStates, echo=FALSE, fig.cap='Simmer States.', out.width='5in', fig.align='center', fig.pos='htbp'}
-knitr::include_graphics('20200803states.pdf')
+knitr::include_graphics('20201120states.pdf')
 ```
 
 ## Performing simmer Simulations
