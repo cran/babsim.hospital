@@ -28,7 +28,7 @@ getRkiData <- function(rki) {
   Age <- Altersgruppe <- Day <- IdBundesland <- IdLandkreis <- Refdatum <- time <- NULL
 
   rki <- as.data.table(rki)
-  rki[, `:=`(Day, as.Date(Refdatum))]
+  rki[, `:=`(Day, as.Date(Refdatum,origin="1970-01-01"))]
 
   # Aggregate to daily counts of cases per subgroup
   DailyCases <- dcast(rki, Day + Altersgruppe + Geschlecht + IdBundesland + IdLandkreis ~

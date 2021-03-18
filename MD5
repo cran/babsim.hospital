@@ -1,6 +1,6 @@
-23bdd7acb618c517f61a4e7c7e8ae002 *DESCRIPTION
+b37260d59c0d9f46803aab4be4874bf6 *DESCRIPTION
 fc40ef466576ab91589bc5e839275a49 *NAMESPACE
-d865e26d3d5bc8ebf49d41c924e7a678 *NEWS.md
+e8371e480be7543efa99b01bcbd7484e *NEWS.md
 ed179c2ceeb7196248c984425b1482f4 *R/GABeds20200624.R
 45c9e6cecce09edf7f7ce6e78efeb669 *R/PackageData.R
 0d0a6ed6ee64412eb41ace791286b312 *R/aggregateSimulationReplications.R
@@ -14,7 +14,7 @@ ec5e661d29668ec19c4c67c3f20b0a40 *R/babsimHospital.R
 98cf96e6ec0fa54dd0068e09bbf6effc *R/class-BabsimRkiCases.R
 43fa7449ee27c595cd4ce5434f0f5b70 *R/ensureRangeOpen.R
 7ba5dcee7811a0f61272a60417edb154 *R/envToTibble.R
-c47fc823b830dda53e7f33a5a85e64d9 *R/extendRki.R
+6e1fdaf1ed0b19f98650d0b25aa44c6c *R/extendRki.R
 c501ab2ca0ca237b9f193d27614d8354 *R/extractSimulationResults.R
 611488e0bc60e611ce16531433d2f839 *R/fitExponential.R
 2dabe020e515e8d3cac4797b6ff88e12 *R/funOptimizeSim.R
@@ -40,7 +40,7 @@ b94ff94f18fb9ff878c7a14f9aad859e *R/getParamterName.R
 01f685913c9c28fb688b039630c890d6 *R/getRealBeds.R
 7ec82836e58f8301a358d38acbdc1867 *R/getRegionIcu.R
 647232a8b7ddaeaf89a4e9aebbc54d24 *R/getRegionRki.R
-11d084ef35388c6ad1388809b127d26e *R/getRkiData.R
+c2549cae8f662a5953c187a03d668f7e *R/getRkiData.R
 e4d7597ec4ca4bac5ff9eeae27b2fa2a *R/getRkiRisk.R
 98da35c0e5a5740efda100b1a1af1d05 *R/getStartParameter.R
 3ca99a51a83573715b2b94075d45833d *R/getSyntheticData.R
@@ -93,9 +93,9 @@ a5def80fa8f9347839fcf85de0e7d46a *data/koelnarchive.rda
 990318fc2fea96bbfd8a04c11673ca86 *data/nrwarchive.rda
 c89463981cf7a9744ecc058463dd3b5f *data/obkarchive.rda
 91ca905c4f5b63a08daa88582cbf2e03 *data/paras.rda
-a7f628ea819ea4309bb2540f0b283ab1 *data/rkidata.rda
+782157ce0a8d1dfc3fed8c0088632552 *data/rkidata.rda
 e30a7c5aab8b64d73e3c240f8c663a2d *data/synthpara.rda
-f63e0afb7da586fbf5b0bb388c8e6f08 *data/vaccineCounts.rda
+bc2a8819e0c0fdbe4c2c5cd112f2bd13 *data/vaccineCounts.rda
 4c87526365da6be57f30ad59a760aba7 *inst/CITATION
 ac539573a7cc8ada9555cfe42fd608f5 *inst/COPYRIGHTS
 aef88dfdc002e2d3d93e275cc38f80a2 *inst/consoleCallTrialScript.R
@@ -231,7 +231,7 @@ e8b315d9a8cba93e20847e998d1ee533 *vignettes/ForTheExpert.d/babsimRkiData.graffle
 5e92441cea0c3719d41ed74e1e1b4da2 *vignettes/ForTheExpert.d/trainTestDataNoOverlap.graffle
 5f2c3165a6d37755bfc32285b409fbd9 *vignettes/ForTheExpert.d/trainTestDataNoOverlap.pdf
 8c547ab1275084d1a7b582183596efcf *vignettes/babsim-vignette-introduction.Rmd
-0e7dae3abcb323bae77837cdf47ec7cb *vignettes/babsim-vignette-introduction.html
+0c4dac9906ec863f4aa97718d879ee86 *vignettes/babsim-vignette-introduction.html
 3a97a9bd1ce187edc3215425f40f73d7 *vignettes/babsim.hospital.sty
 d4701b475e678d298147db059cec145e *vignettes/logoHospital.graffle
 6fa70b37a533b0e9dde9502d060d49cd *vignettes/logoHospital.png

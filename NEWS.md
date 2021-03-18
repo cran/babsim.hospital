@@ -2,6 +2,13 @@
 ## Release Policy:
   * Even release numbers refer to unstable versions, e.g., 1.5.12
 
+## 11.7.14
+  * BUGFIX:
+     as.Date() provides origin (origin = "1970-01-01") to fix error:
+     Quitting from lines 618-626 (babsim-vignette-introduction.Rmd) 
+     Error: processing vignette 'babsim-vignette-introduction.Rmd' failed with diagnostics:
+     'origin' must be supplied:
+
 ## 11.7.12
    * BUGFIX:
     Found the following (possibly) invalid URLs:

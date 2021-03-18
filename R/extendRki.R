@@ -41,7 +41,7 @@
 extendRki <- function(data = getRkiData(babsim.hospital::rkidata), EndDate = max(data$Day) +
                         28, R0 = c(1, 1), tau = 5) {
   StartDate <- max(data$Day) + 1
-  EndDate <- as.Date(EndDate)
+  EndDate <- as.Date(EndDate, origin="1970-01-01")
   Day <- seq(StartDate, EndDate, by = 1)
   time <- seq_along(Day)
 
