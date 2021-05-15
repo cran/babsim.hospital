@@ -19,7 +19,8 @@ getTrainTestObjFun(
   icuWeights = c(1, 1),
   resourceNames = c("intensiveBed", "intensiveBedVentilation"),
   resourceEval = c("intensiveBed", "intensiveBedVentilation"),
-  tryOnTestSet = TRUE
+  tryOnTestSet = FALSE,
+  simRepeats = 1
 )
 }
 \arguments{
@@ -54,7 +55,9 @@ TestSimStartDate is usually before TestFieldStartDate}
 
 \item{resourceEval}{Name der zu evaluierenden Ressourcen}
 
-\item{tryOnTestSet}{Should results be tested on a separate test set?}
+\item{tryOnTestSet}{Should results be tested on a separate test set?. Default \code{FALSE}.}
+
+\item{simRepeats}{Number of simulation repeats on each kernel (only on unix-like machines, ignored on Win systems). Default: 1}
 }
 \description{
 Generate objective functions (one for train, optionally one for test)

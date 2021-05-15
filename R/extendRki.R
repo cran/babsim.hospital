@@ -50,8 +50,8 @@ extendRki <- function(data = getRkiData(babsim.hospital::rkidata), EndDate = max
 
 
   # Initial number of cases is average number of cases in the last 7 days.
-  InitalCases <- sum(data$Day >= (StartDate - 7)) / 7
-  InitalCases <- max(InitalCases, 1)
+  InitialCases <- sum(data$Day >= (StartDate - 7)) / 7
+  InitialCases <- max(InitialCases, 1)
 
   # Extend R0 for each day.
   R0 <- if (length(R0) > 1) {
@@ -62,7 +62,7 @@ extendRki <- function(data = getRkiData(babsim.hospital::rkidata), EndDate = max
   # FIXME: We should really add some randomness here!  One approach would be to add
   # a small relative error to R0 (say 5%)
   K <- log(R0) / tau
-  CasesPerDay <- round(InitalCases * exp(K * time))
+  CasesPerDay <- round(InitialCases * exp(K * time))
 
   ## Repeat for each case
   Day <- rep.int(Day, times = CasesPerDay)

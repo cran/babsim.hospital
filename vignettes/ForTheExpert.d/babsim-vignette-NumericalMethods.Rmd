@@ -1,0 +1,1152 @@
+---
+title: "Hospital Capacity Planning Using Discrete Event Simulation: Numerical Methods" 
+abstract: >
+ Resource planning for hospitals under special consideration of the COVID-19 pandemic.
+preamble: |
+  % Any extra LaTeX you need in the preamble
+  % header-includes:
+always_allow_html: true  
+date: "`r Sys.Date()`"
+output:
+    pdf_document:
+    fig_caption: yes 
+    includes:
+          in_header: babsim.hospital.sty
+    rmarkdown::html_vignette:
+vignette: >
+  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Hospital Capacity Planning Using Discrete Event Simulation: Numerical Methods}
+  %\VignetteEngine{knitr::rmarkdown}
+---   
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "%>"
+)
+```
+
+## Introduction
+
+* Resource and capacity planning for hospitals.
+* Paper: A novel modelling technique to predict resource-requirements 
+in critical care:  a case study (Lawton, McCooe) see (Lawt19a).
+
+
+## Packages
+
+```{r installDevtools, eval = FALSE}
+install.packages("devtools")
+devtools::install_github("r-lib/devtools")
+```
+
+
+```{r, installSPOT, eval = FALSE}
+url <- "http://owos.gm.fh-koeln.de:8055/bartz/spot.git"
+devtools::install_git(url = url)
+```
+
+
+```{r, install babsim.hospital, eval = FALSE}
+url <- "http://owos.gm.fh-koeln.de:8055/bartz/babsim.hospital"
+devtools::install_git(url = url, subdir = "babsim.hospital")
+```
+
+```{r, cleanStart}
+rm(list = ls())
+suppressPackageStartupMessages({
+library("SPOT")
+library("babsim.hospital")
+library("simmer")
+library("simmer.plot")
+library("plotly")
+})
+```
+
+
+* Package version of `SPOT` must be larger than `2.2.4`:
+
+```{r loadSPOT, eval = FALSE}
+packageVersion("SPOT")
+```
+
+# Motivation
+
+* Crises like the COVID-19 pandemic pose a serious challenge to health care institutions. 
+* They need to determine and plan the resources required for handling the increased load, 
+for instance in terms of hospital beds and ventilators. 
+After consultation with the local authorities of the Oberbergisches Land District, 
+the babsimhospital tool was created to address the resource planning challenges the public authorities are facing. 
+* This is a tool for capacity planning based on discrete event simulation that aims to address this challenge.
+   * The predictive quality of the simulation is based on a set of 29 parameters.
+   * The default values of these parameters were established in cooperation with medical professionals. 
+   * We aim to investigate and optimize these parameters to improve babsimhospital.
+   * To that end, we use model-based optimization via SPOT and an in-depth sensitivity analysis.
+   * The sensitivity analysis is crucial for the optimization process, 
+   since it allows to focus the search on the most important parameters of the simulation.
+   *  We illustrate that this approach allows for a reduction in the dimensions of the simulation without 
+   compromising the resulting accuracy.
+
+# Data used by babsim.hospital
+
+## Data Sources
+
+* We combine data from two different sources:
+  1. `simData`: simulation data, i.e., input data for the simulation. Here,
+  we will use data from UK.
+  2. `fieldData`: real data, i.e., data from the DIVI-Intensivregister. The 
+  field data will be used for validating the simulation output. 
+  
+* Statistically speaking, the `babsim.hospital` simulator models 
+ resources usage in hospitals, e.g., number of ICU beds ($y$), as a function 
+of the number of infected individuals ($x$).
+
+* In addition to the number of infections, information about age and gender can 
+be used as simulation input.
+
+* You will take a closer look at these data in the following sections.
+Therefore, we have provided som real data from the UK.
+
+
+## Simulation Data: UK Data
+
+* Read data from Excel file.
+* WARNING:
+   * Please change the path information with respect to your local setting!
+
+```{r, readUKData , eval = TRUE}
+library(readxl)
+X20201111UKdata <- read_excel("../../inst/extdata/CovidDataGroup1.xlsx")
+ukdataRawFull1 <- X20201111UKdata
+```
+
+
+```{r, strData}
+str(ukdataRawFull1)
+```
+
+* Date
+* `Infected`: New cases = new cases either admitted to hospital or diagnosed in the hospital
+* Deaths = deaths in hospital
+* Discharges = successful discharge to home or other location from hospital
+* Confirmed cases currently in hospital – by age range (nb excludes suspected cases I think)
+* `bed`: Total COVID inpatient = total in hospital (includes ICU)
+* `ìntensiveBed`: COVID-19 Non-invasive = patients on non-invasive ventilators (CPAP). In theory these should be on ICU but we don’t have space for them all. The model should probably consider them to be ICU but not intubated (level 2)
+* `intensiveBedVentilated`: COVID-19 Ventilated = patients ventilated and intubated on ICU
+* `NewCasesUK`: New cases in UK = new cases diagnosed across the city. In March/April the government testing was very poor so there were a *lot* of undiagnosed cases in the UK. Currently we think we’re diagnosing 30-50% of cases.
+* Cumulative cases in UK = cumulative version of above
+
+
+### Consider Second Wave
+
+```{r}
+ukdataRaw <- ukdataRawFull1[as.Date(ukdataRawFull1$Date) > "2020-09-01",]
+str(ukdataRaw)
+```
+
+
+
+
+ 
+```{r, getSimData}
+simData <- data.frame(Day = as.Date(ukdataRaw$Date),
+                      Infected = ukdataRaw$NewCases)
+```
+
+
+```{r}
+plot(simData$Infected ~ simData$Day, type="b")
+```
+
+
+
+# Field Data (Real ICU Beds)
+
+## Preprocessing TL ICU Data
+
+* Note: non ICU patients can be calculated as 
+`TotalCOVID19Inpatient  - COVID19NonInvasiveCPAP - COVID19VentilatedICU `
+
+* We convert the data into a data.frame with 
+  1. Day
+  2. bed
+  3. intensiveBed,
+  4. intensiveBedVentilation, and 
+  5. Day
+  
+```{r}
+Day <- as.Date(ukdataRaw$Date)
+bed <- ukdataRaw$TotalCOVID19Inpatient - ukdataRaw$COVID19NonInvasiveCPAP - ukdataRaw$COVID19VentilatedICU
+intensiveBed <-  ukdataRaw$COVID19NonInvasiveCPAP
+intensiveBedVentilation <- ukdataRaw$COVID19VentilatedICU
+fieldData <- data.frame(Day = Day,
+                        bed = bed,
+                        intensiveBed = intensiveBed,
+                        intensiveBedVentilation = intensiveBedVentilation)
+str(fieldData)
+```
+```{r}
+max(fieldData$intensiveBed)
+```
+
+* The field data based on UK data used three bed categories:
+  1. `bed`: non ICU patients in hospital
+  1. `intensiveBed`: ICU bed without ventilation
+  2. `intensiveBedVentilation`: ICU bed with ventilation
+
+# Performing Simulations
+
+* To perform a simulation, the setting must be configured (seed, number of 
+repeats, sequential or parallel evaluation, variable names, dates, etc.)
+
+```{r, selectConfig}
+seed = 123
+simrepeats = 2
+parallel = FALSE
+percCores = 0.8
+resourceNames =  c("bed", "intensiveBed", "intensiveBedVentilation")
+resourceEval = c("bed", "intensiveBed", "intensiveBedVentilation")
+```
+
+
+* We can specify the field data based on `ukdataRaw`  for the simulation as 
+follows:
+
+```{r, selectIcuData}
+FieldStartDate = as.Date(min(fieldData$Day))
+rownames(fieldData) <- NULL
+icu = FALSE
+icuWeights = c(1,2,10)
+```
+
+
+* Next, simulation data (RKI data) can be selected. The simulation data in our example, 
+depend on the field data:
+
+```{r, selectRkiData}
+SimStartDate = FieldStartDate
+```
+
+* Finally, we combine all data in one data frame `data`:
+
+```{r, combineSelectedData}
+data <- list(simData = simData,
+ fieldData = fieldData)
+
+```
+
+
+
+```{r, eval =FALSE}
+visualizeUK <- function(data,
+                        region = 05315){
+  dataCov <- data$fieldData
+  par(mfrow=c(3,1))
+  plot(dataCov$Day, dataCov$bed, type = "b", xlab = "Day", 
+       ylab="Patients", 
+       main = paste0("bed: non ICU patients in hospital")
+  )
+  dataCov$weekly <- slide_dbl(dataCov$bed, ~mean(.x), .before = (7 -1))
+  lines(dataCov$Day, dataCov$weekly, col = "red")
+  ##
+  plot(dataCov$Day, dataCov$intensiveBed, type = "b", xlab = "Tag", 
+       ylab="Patients", 
+       main = paste0("intensiveBed: ICU bed without ventilation")
+  )
+  dataCov$weekly <- slide_dbl(dataCov$intensiveBed, ~mean(.x), .before = (7 -1))
+  lines(dataCov$Day, dataCov$weekly, col = "red")
+  ##
+  plot(dataCov$Day, dataCov$intensiveBedVentilation, type = "b", xlab = "Tag", 
+       ylab="Patients", 
+       main = paste0("intensiveBedVentilation: ICU bed with ventilation")
+  )
+  dataCov$weekly <- slide_dbl(dataCov$intensiveBedVentilation, ~mean(.x), .before = (7 -1))
+  lines(dataCov$Day, dataCov$weekly, col = "red")
+}
+```
+
+
+
+```{r}
+visualizeUK(data=data)
+```
+
+
+
+```{r}
+UKdata <- data
+### usethis::use_data(UKdata, overwrite = TRUE)
+```
+
+
+* Configuration information is stored in the `conf` list, i.e., 
+`conf` refers to the simulation configuration, e.g., 
+sequential or parallel evaluation,
+number of cores, 
+resource names, 
+log level, etc.
+
+
+```{r, getSimConf}
+conf <- babsimToolsConf()
+conf$ResourceEval <- conf$ResourceNames
+conf <- getConfFromData(conf = conf,
+                        simData = data$simData,
+                        fieldData = data$fieldData)
+  conf$parallel = parallel
+  conf$simRepeats = simrepeats
+  conf$ICU = FALSE
+  conf$ResourceNames = resourceNames
+  conf$ResourceEval = resourceEval
+  conf$percCores = percCores
+  conf$logLevel = 0
+  conf$w2 = icuWeights
+  set.seed(conf$seed)
+```
+
+## Simulation Model Parameters 
+
+* The core of the `babsim.hospital` simulations is based on the `simmer` package. 
+* It uses simulation parameters, e.g., arrival times, durations, and 
+transition probabilities. 
+* These are currently 42 parameters (shown below) that are stored in the list `para`.
+
+```{r, getSimParameter}
+para <- babsimHospitalPara()
+str(para)
+```
+
+
+# Run simulation
+
+* The `babsim.hospital` simulator requires the specification of
+  1. `arrivalTimes`
+  2. configuration list `conf`
+  3. parameter list `para` 
+for the simulation.
+
+* In addition to the `arrivalTimes`, a risk can be specified, i.e., 
+a `data.frame` with the following entries can be passed to the main simulation 
+function `babsimHospital`:
+  1. `time`: arrival time 
+  2. `Risk`: risk (based on age and gender)
+* The specification of the `Risk` values is optional.
+* Output from the simulation is stored in the variable `envs`.
+
+```{r, generateArrivalTimes, echo = FALSE}
+arrivalTimes <- data.frame(time = getArrivalTimes(data$simData$Infected))
+```
+
+
+```{r, runSimmer, echo = FALSE}
+envs <- babsimHospital(arrivalTimes = arrivalTimes,
+                         conf = conf,
+                         para = para)
+```
+## Visualize Output
+
+### Simmer Plots
+
+* First, we illustrate how to generate plots using the `simmer.plot` package.
+
+* In the following graph, the individual lines are all separate replications. 
+The smoothing performed is a cumulative average. 
+
+* Besides `intensiveBed` and  `intensiveBedVentilation`, `babsim.hospital` 
+also provides information about the number of non-ICU beds. The non-ICU beds are
+labeled as `bed`.
+
+* Summarizing, `babsim.hospital` generates output for three bed categories:
+ 1. `bed`
+ 2. `intensiveBed`
+ 3. `intensiveBedVentilation`
+
+* To plot resource usage for three resources side-by-side, we
+can proceed as follows:
+
+```{r, plotSimmerThreeResources}
+resources <- get_mon_resources(envs)
+resources$capacity <- resources$capacity/1e5
+plot(resources, metric = "usage", c("bed", "intensiveBed", "intensiveBedVentilation"), items = "server",steps= TRUE)
+```
+* Each resource can be plotted separately.
+
+1. The following command generates a plot of non icu beds:
+
+```{r, plotBeds3}
+plot(resources, metric = "usage", "bed", items = "server", steps = TRUE)
+```
+
+2. The following command generates a plot of icu beds without ventilation:
+
+```{r, plotICU3}
+plot(resources, metric = "usage", "intensiveBed", items = "server", steps = TRUE)
+```
+
+3. The following command generates a plot of icu beds with ventilation:
+
+```{r, plotVent3}
+plot(resources, metric = "usage", "intensiveBedVentilation", items = "server", steps = TRUE)
+```
+
+## Evaluate Simulation Results
+
+* `babsim.hospital` provides functions for evaluating the quality of the
+simulation results.
+* Simulation results depend on the transition probabilities and durations, i.e.,
+a vector of more than 30 variables.
+* These vectors represent *parameter settings*.
+* `babsim.hospital` provides a *default* parameter set, that is based on 
+knowledge from domain experts (doctors, members of COVID-19 crises teams, 
+mathematicians, and many more).
+* We can calculate the error (RMSE) of the default parameter setting, which was used 
+in this simulation, as follows:
+
+```{r, getErrsResults}
+fieldEvents <- getRealBeds(data = data$fieldData,
+                        resource = conf$ResourceNames)
+res <- getDailyMaxResults(envs = envs,  fieldEvents = fieldEvents, conf=conf)
+resDefault <- getError(res, conf=conf)
+```
+
+The error is `r resDefault`.
+
+
+* Here, we illustrate how `babsim` plots can be generated.
+
+```{r, plotSimAndResults}
+p <- plotDailyMaxResults(res, showBeds = TRUE)
+plot(p)
+```
+
+* Using `ggplot` and `plotly`can be used to generate interactive plots.
+
+```{r, interactiveGGplotly, eval = FALSE}
+ggplotly(p) 
+```
+
+
+## Optimization 
+
+* As discussed above, `babsim.hospital` provides a default parameter set, which 
+can be used for simulations.
+* The function `babsimHospitalPara()` provides a convenient way to access the
+default parameter set:
+```{r, eval = TRUE}
+para <- babsimHospitalPara()
+print(para)
+```
+
+
+* `babsim` provides an interface to optimize the parameter values of 
+the simulation model. 
+* The following code is just a quick demo.
+
+```{r, eval = FALSE}
+conf$simulationDates$StartDate
+conf$simulationDates$EndDate
+conf$fieldDates$StartDate
+conf$fieldDates$EndDate
+```
+
+# Run 01 with adapted probabilities:
+
+```{r, eval = FALSE}
+# modified 17.2.2021: factorUK added
+# modified 22.2.2021: factorIcuUK added
+library("babsim.hospital")
+library("SPOT")
+library("simmer")
+studyDate <- as.Date( min(conf$simulationDates$EndDate, conf$fieldDates$EndDate ))
+resUK <- runoptUK(
+  expName = paste0("UK-", format(Sys.time(), "%Y-%b.%d-%H.%M-V"), utils::packageVersion("babsim.hospital")),
+  simData = data$simData,
+  fieldData = data$fieldData,
+  TrainSimStartDate = studyDate - 10*7, # "2020-09-02",
+  TrainFieldStartDate = studyDate - 8*7, # "2020-09-15",
+  TestSimStartDate = studyDate - 6*7 , #"2020-09-30",
+  TestFieldStartDate = studyDate - 4*7, #"2020-10-23",
+  Overlap = 0,
+  seed = 101170,
+  repeats = 2, 
+  funEvals = 50,
+  size = 30,
+  simrepeats = 2,
+  parallel = TRUE,
+  percCores = 0.9,
+  icu = FALSE,
+  icuWeights = c(1,2,10),
+  verbosity = 0,
+  resourceNames =  c("bed", "intensiveBed", "intensiveBedVentilation"),
+  resourceEval = c("bed", "intensiveBed", "intensiveBedVentilation"),
+  factorUK = 0.1,
+  factorIcuUK = 1.0
+)
+```
+
+* `runoptUK()` returns a list with two elements:
+  * `result.df`, which is a data.frame
+  * reslist
+  
+* `result.df` contains the best (optimized) results from the SPOT runs.
+* It can be stored as `ukpara` as follows:
+  * WARNING: Only execute the following code if you know what you are doing!
+
+```{r, eval = FALSE}
+ukpara01 <- resUK[[1]]
+usethis::use_data(ukpara01, overwrite = TRUE)
+```
+
+
+# Run 02 with adapted probabilities and durations:
+
+```{r, eval = FALSE}
+# modified 17.2.2021: factorUK added
+# modified 22.2.2021: factorIcuUK added
+library("babsim.hospital")
+library("SPOT")
+library("simmer")
+studyDate <- as.Date( min(conf$simulationDates$EndDate, conf$fieldDates$EndDate ))
+resUK <- runoptUK(
+  expName = paste0("UK-", format(Sys.time(), "%Y-%b.%d-%H.%M-V"), utils::packageVersion("babsim.hospital")),
+  simData = data$simData,
+  fieldData = data$fieldData,
+  TrainSimStartDate = studyDate - 10*7, # "2020-09-02",
+  TrainFieldStartDate = studyDate - 8*7, # "2020-09-15",
+  TestSimStartDate = studyDate - 6*7 , #"2020-09-30",
+  TestFieldStartDate = studyDate - 4*7, #"2020-10-23",
+  Overlap = 0,
+  seed = 101170,
+  repeats = 2, 
+  funEvals = 50,
+  size = 30,
+  simrepeats = 2,
+  parallel = TRUE,
+  percCores = 0.9,
+  icu = FALSE,
+  icuWeights = c(1,2,10),
+  verbosity = 0,
+  resourceNames =  c("bed", "intensiveBed", "intensiveBedVentilation"),
+  resourceEval = c("bed", "intensiveBed", "intensiveBedVentilation"),
+  factorUK = 0.1,
+  factorIcuUK = 2
+)
+```
+
+```{r, eval = FALSE}
+ukpara02 <- resUK[[1]]
+usethis::use_data(ukpara02, overwrite = TRUE)
+```
+
+
+
+## Use Optimized Parameters from Run 01
+
+* ukpara contains results from several runs, the function `getBestParameter` picks out the best and maps it to the variables that are 
+used by the BaBSim.Hospital simulator.
+
+```{r, eval = TRUE}
+ukpara <- ukpara01
+print(ukpara)
+```
+
+* * The following line of code should only be executed if a new optimization run was
+ performed. Otherwise, use the data from `ukpara02` :
+```{r, eval = FALSE}
+para <- getBestParameter(resUK[[1]])
+```
+
+* For your convenience, we have stored the results from a quick optimization run.
+   * They are available as `ukpara` and can be converted into a `babsimhospital`parameter set 
+   as follows:
+```{r, eval = TRUE}
+para01 <- getBestParameter(ukpara01)
+str(para01)
+```
+
+
+```{r, eval = TRUE}
+conf$simRepeats = 10
+res01 <- modelResultHospital(para=para01, 
+                           conf=conf,
+                           data = data)
+resOpt01 <- getError(res01, conf=conf)
+```
+
+* Optimization improves the error from  `r resDefault` to `r resOpt01`.
+* This improvement can also be visualized.
+* Note: 
+  * This is an updated version of the document, which uses the modified boundaries
+  as explained in the Appendix "Modification of the Boundaries".
+
+```{r, eval = TRUE}
+p01 <- plotDailyMaxResults(res01, showBeds = TRUE)
+print(p01)
+```
+
+* `ggplot` and `plotly`can be used to generate interactive plots.
+
+```{r, showGgplotly01, eval = FALSE}
+ggplotly(p01)
+```
+
+
+## Use Optimized Parameters from Run 02
+
+* ukpara contains results from several runs, the function `getBestParameter` picks out the best and maps it to the variables that are 
+used by the BaBSim.Hospital simulator.
+
+```{r, eval = TRUE}
+ukpara <- ukpara02
+print(ukpara)
+```
+
+* The following line of code should only be executed if a new optimization run was
+ performed. Otherwise, use the data from `ukpara02` :
+
+```{r, eval = FALSE}
+para <- getBestParameter(resUK[[1]])
+```
+
+* For your convenience, we have stored the results from a quick optimization run.
+   * They are available as `ukpara` and can be converted into a `babsimhospital`parameter set 
+   as follows:
+```{r, eval = TRUE}
+para02 <- getBestParameter(ukpara02)
+str(para02)
+```
+
+
+```{r, eval = TRUE}
+conf$simRepeats = 100
+res02 <- modelResultHospital(para=para02, 
+                           conf=conf,
+                           data = data)
+resOpt02 <- getError(res02, conf=conf)
+```
+
+* Optimization improves the error from  `r resDefault` to `r resOpt02`.
+* This improvement can also be visualized.
+* Note: 
+  * This is an updated version of the document, which uses the modified boundaries
+  as explained in the Appendix "Modification of the Boundaries".
+
+```{r, eval = TRUE}
+p02 <- plotDailyMaxResults(res02, showBeds = TRUE)
+print(p02)
+```
+
+* `ggplot` and `plotly`can be used to generate interactive plots.
+
+```{r, showGgplotly02, eval = FALSE}
+ggplotly(p02)
+```
+
+
+
+
+
+## Visualize and Analyse Parameter Settings
+
+* `babsim.hospital` includes tools to analyse parameter settings.
+* You might recall that parameter settings consist of
+   1. transition probabilities, e.g., the probability that an infected
+   individual has to go to the hospital. 
+   2. durations, e.g., the time span until an infected individual goes to the
+   hospital (in days).
+* The following plot illustrates the transition probabilities.
+* States are as follows:
+   1. `infec`: infected
+   2. `out`: transfer out, no hospital required
+   3. `hosp`: hospital
+   4. `normal`: normal station, no ICU
+   5. `intens`: ICU (without ventilation)
+   6. `vent`: ICU ventilated
+   7. `intafter`: intensive aftercare (from ICU with ventilation, on ICU)
+   8. `aftercare`: aftercare (from ICU,  on normal station)
+   9. `death`: patient dies
+  10. `healthy`: recovered
+ 
+
+```{r, visParaP}
+visualizeGraph(para=para, option = "P")
+```
+
+* The transition matrix, that stores the probabilities, is shown below:
+
+```{r, showMatrixP}
+getMatrixP(para = para )
+```
+
+
+* Similar to the probabilites, durations can be visualized:
+
+```{r, showDurationMatrix}
+visualizeGraph(para = para, option = "D")
+```
+
+* The corresponding matrix is shown below:
+
+```{r, showMatrixDurations}
+getMatrixD(para = para)
+```
+
+
+
+# Project Work
+
+## Part I (26.1.2021)
+
+* Install the required software on your computer.
+* Execute this RMD file:
+   * Modify the path the the Excel file (according to your group)
+   * Run the optimization (see Section "Optimzation"). 
+   * WARNING: the runs might take some time.
+* Describe the parameter set `babsim.hospital::babsimHospitalPara` that is 
+   used by the `babsimHospital` simulator.
+   * You can use the `help` function, e.g. `help(babsim.hospital::babsimHospitalPara).
+* Take a look a the source code of the `babsim.hospital::babsimHospital` function:
+   * Describe states and model trajectories.
+   * You can use the `help` function, e.g. `help(babsim.hospital::babsimHospital).
+
+
+## Part II (2.2.2021)
+
+* Install the required software on your computer.
+* Execute the code below (this is a modified version of the code from last week):
+   * Modify the path the the Excel file (according to your group)
+   * Run the optimization (see Section "Optimization"). 
+   * WARNING: the runs might take some time.
+* Describe the commands as well as input and output for every code fragment in the RMD code below.
+* Generate a flowchart (flow diagram) that describes the simulation and optimization process based on the code below.
+* Describe the role of the random number generator:
+   * What is the meaning of the command `set.seed`?
+   * What happens if you use RNGkind("Wich")?
+* Optimization does not improve every bed category. 
+   * Do you have an explanation for this?
+   * Consider a different situation in UK hospital?
+   * Do you have any ideas how this can be fixed?
+   
+## Specific Questions for Each Group
+
+### Organisation
+
+* You will work in  the same groups that were build for the "Optimization" lecture.
+* There are five groups, see [ILIAS: Optimzation](https://ilias.th-koeln.de/goto.php?target=grp_1693520&client_id=ILIAS_FH_Koeln)
+* For each group, you find typical questions that could be covered in your presentation below in the subsequent five paragraphs. These serve as guidelines (for your inspiration) and can be extended.
+
+### Group 1. Group Problem Understanding, Data Understanding
+
+* Describe the (general) goals of babsim.hospital simulations!
+* What problems can be solved?
+* What are the limits of this approach?
+* Are there any other approaches?
+* Consider elements and features of the on-line (demo) simulator, 
+ see [babsim.hospital](https://covid-resource-sim.th-koeln.de/app/babsim.hospitalvis)
+
+
+### Group 2. Data Preparation (Extract, transfer load)
+
+* Describe the data sources that are used in babsim.hospital!
+* What is the difference between field and simulation data?
+* Describe data preparation: what is the reason for data preparation and how is it performed?
+* Describe the data before and after cleaning and preparation.
+
+### Group 3. Theoretical Modeling
+
+* Describe the parameters that are used in the model!
+* babsim.hospital implements a "discrete event simulation" (DES) approach. Explain the ideas of DES!
+* Describe states and model trajectories (theorectically, their implementations will be described by group 4)! You can use the 
+output from the `visualizeGraph()` command.
+* Explain the data flow (can be based on the flowchart)!
+
+### Group 4. Performing Simulations
+
+* What are arrival events?
+* Describe the difference between stochastic and deterministic simulation! Where is randomness used in the simulator? And why?
+* Consider the `babsim.hospital::babsimHospital` function:
+   * Describe states and model trajectories.
+* Describe the output from simulation runs!
+
+### Group 5. Optimization, Evaluation, Visualization
+
+* Goals: What should be optimized and why?
+* How can the improvement be measured (quantification)?
+* What is the role of graphical tools (visualization)?
+* Describe important considerations before the optimization is started (memory, time, and storage requirements,...)!
+* What differences between ICUs (or hospitals) should be considered, e.g., in Germany and UK?
+
+   
+   
+# Code for Part II (Simulation and Optimization of babsimhospital)
+
+* Technical setup
+
+
+```{r, technical setup, eval = FALSE}
+## install.packages("devtools")
+## devtools::install_github("r-lib/devtools")
+
+## url <- "http://owos.gm.fh-koeln.de:8055/bartz/spot.git"
+## devtools::install_git(url = url)
+
+## url <- "http://owos.gm.fh-koeln.de:8055/bartz/babsim.hospital"
+## devtools::install_git(url = url, subdir = "babsim.hospital")
+
+rm(list = ls())
+suppressPackageStartupMessages({
+library("SPOT")
+library("babsim.hospital")
+library("simmer")
+library("simmer.plot")
+library("readxl")
+  })
+
+packageVersion("SPOT")
+```
+
+* Read XLSX Data
+
+
+```{r, readXlsx, eval = FALSE}
+### X20201111UKdata <- read_excel("/Users/bartz/workspace/Lehre.d/IDEA-Master-AIT-WS2020-2021/Numerical-Methods/Datasets/CovidDataGroup1.xlsx")
+X20201111UKdata <- read_excel("~bartz/workspace/Lehre.d/IDEA-Master-AIT-WS2020-2021/Numerical-Methods/Datasets/CovidDataGroup1.xlsx")
+ukdataRaw <- X20201111UKdata[as.Date(X20201111UKdata$Date) > "2020-09-01",]
+```
+
+* Generate simulation data, input to the simulator
+
+
+```{r, simData, eval = FALSE}
+simData <- data.frame(Day = as.Date(ukdataRaw$Date),
+                      Infected = ukdataRaw$NewCases)
+```
+
+* Generate field data (real-world data)
+
+```{r, fieldData, eval = FALSE}
+Day <- as.Date(ukdataRaw$Date)
+bed <- ukdataRaw$TotalCOVID19Inpatient - ukdataRaw$COVID19NonInvasiveCPAP - ukdataRaw$COVID19VentilatedICU
+intensiveBed <-  ukdataRaw$COVID19NonInvasiveCPAP
+intensiveBedVentilation <- ukdataRaw$COVID19VentilatedICU
+fieldData <- data.frame(Day = Day,
+                        bed = bed,
+                        intensiveBed = intensiveBed,
+                        intensiveBedVentilation = intensiveBedVentilation)
+rownames(fieldData) <- NULL
+```
+
+* Combine data:
+
+```{r, fullData, eval = FALSE}
+data <- list(simData = simData,
+ fieldData = fieldData)
+```
+
+* Configuration setup and seed setup
+
+```{r, configuration, eval = FALSE}
+conf <- babsimToolsConf()
+conf$ResourceEval <- conf$ResourceNames
+conf <- getConfFromData(conf = conf,
+                        simData = data$simData,
+                        fieldData = data$fieldData)
+conf$parallel = TRUE
+conf$simRepeats = 2
+conf$ICU = FALSE
+conf$ResourceNames =  c("bed", "intensiveBed", "intensiveBedVentilation")
+conf$ResourceEval =  c("bed", "intensiveBed", "intensiveBedVentilation")
+conf$percCores = 0.8
+conf$logLevel = 0
+conf$w2 = c(1,2,10)
+conf$seed = 123
+set.seed(conf$seed)
+```
+
+* Set simulation parameters:
+
+```{r, setPara, eval = FALSE}
+para <- babsimHospitalPara()
+```
+
+* Generate arrival times
+
+```{r, getArrivals, eval = FALSE}
+arrivalTimes <- data.frame(time = getArrivalTimes(data$simData$Infected))
+```
+
+* Run simulation
+
+```{r, simulateBaBSim, eval = FALSE}
+envs <- babsimHospital(arrivalTimes = arrivalTimes,
+                         conf = conf,
+                         para = para)
+```
+
+
+```{r, getResources, eval = FALSE}
+resources <- get_mon_resources(envs)
+resources$capacity <- resources$capacity /1e5
+```
+
+
+```{r, plotResources, eval = FALSE}
+plot(resources, metric = "usage", c("bed", "intensiveBed", "intensiveBedVentilation"), items = "server",steps= TRUE)
+```
+
+
+```{r, plotResourcesDetail, eval = FALSE}
+# plot(resources, metric = "usage", "bed", items = "server", steps = TRUE)
+# plot(resources, metric = "usage", "intensiveBed", items = "server", steps = TRUE)
+# plot(resources, metric = "usage", "intensiveBedVentilation", items = "server", steps = TRUE)
+```
+
+
+* Generate data frame from simulation results
+
+```{r, getFieldEvents, eval = FALSE}
+fieldEvents <- getRealBeds(data = data$fieldData,
+                        resource = conf$ResourceNames)
+```
+
+* Extract important data
+
+```{r, prepareFieldEvents, eval = FALSE}
+res <- getDailyMaxResults(envs = envs,  fieldEvents = fieldEvents, conf=conf)
+```
+
+* Calculate error of the default parameter configuration
+
+```{r, getErrorFromEvents, eval = FALSE}
+errDefault <- getError(res, conf=conf)
+print(errDefault)
+```
+
+* Plot results
+
+```{r, plotResultsFromDefault, eval = FALSE}
+p <- plotDailyMaxResults(res, showBeds = TRUE)
+plot(p)
+ggplotly(p)
+```
+
+* Optimization
+
+```{r, optimizePara, eval = FALSE}
+library("babsim.hospital")
+library("SPOT")
+library("simmer")
+studyDate <- as.Date( min(conf$simulationDates$EndDate, conf$fieldDates$EndDate ))
+resUK <- runoptUK(
+  expName = paste0("UK-", format(Sys.time(), "%Y-%b.%d-%H.%M-V"), utils::packageVersion("babsim.hospital")),
+  simData = data$simData,
+  fieldData = data$fieldData,
+  TrainSimStartDate = studyDate - 10*7, # "2020-09-02",
+  TrainFieldStartDate = studyDate - 8*7, # "2020-09-15",
+  TestSimStartDate = studyDate - 6*7 , #"2020-09-30",
+  TestFieldStartDate = studyDate - 4*7, #"2020-10-23",
+  Overlap = 0,
+  seed = 101170,
+  repeats = 2,
+  funEvals = 50,
+  size = 35,
+  simrepeats = 2,
+  parallel = TRUE,
+  percCores = 0.9,
+  icu = FALSE,
+  icuWeights = c(1,2,10),
+  verbosity = 0,
+  resourceNames =  c("bed", "intensiveBed", "intensiveBedVentilation"),
+  resourceEval = c("bed", "intensiveBed", "intensiveBedVentilation")
+)
+```
+
+
+```{r, getParaUK, eval = FALSE}
+ukpara <- resUK[[1]]
+print(ukpara)
+```
+
+
+```{r, evalPara, eval = FALSE}
+paraOpt <- getBestParameter(resUK[[1]])
+str(paraOpt)
+```
+
+
+```{r, evalParaOptSPOT, eval = FALSE}
+# Best para as provided by SPOT.
+# Can be used if optimization is not possible:
+# paraOpt <- getBestParameter(ukpara)
+# print(paraOpt)
+```
+
+* Simulate model with paraOpt settings 10 times:
+
+```{r, simParaOpt, eval = FALSE}
+conf$simRepeats = 10
+resOpt <- modelResultHospital(para=paraOpt, 
+                            conf=conf,
+                            data = data)
+```
+
+* Calculate error for paraOpt simulation:
+
+```{r, evalParaOptError, eval = FALSE}
+errOpt <- getError(resOpt, conf=conf)
+print(errOpt)
+```
+
+* Plot results from optimized simulation
+
+```{r, plotParaOpt, eval = FALSE}
+p <- plotDailyMaxResults(resOpt, showBeds = TRUE)
+print(p)
+# ggplotly(p)
+```
+
+* Show simulation model
+  * probabilities
+
+```{r, showProbMatrix, eval = FALSE}
+ getMatrixP(para = para )
+```
+
+
+```{r, visModelProb, eval = FALSE}
+visualizeGraph(para=paraOpt, option = "P")
+```
+
+* Show simulation model:
+   * durations
+
+```{r, visModelDuration, eval = FALSE}
+getMatrixD(para = paraOpt)
+```
+
+```{r, visModelDurationPlot, eval = FALSE}
+visualizeGraph(para = paraOpt, option = "D")
+```
+
+
+
+
+
+# Summary
+
+* This report describes experimental methods for tuning algorithms.
+* Using a simple simulated annealing algorithm, it was demonstrated how optimization algorithms can be tuned using the
+`SPOT`.
+* Several tools from the `SPOT` for automated and interactive tuning were illustrated and the underling concepts of the `SPOT` approach were explained. 
+* Central in the `SPOT` approach are techniques such as exploratory fitness landscape analysis and response surface methodology.
+* Furthermore, we demonstrated how SPOT can be used as optimizer and how a sophisticated ensemble approach is able to combine several meta models via stacking.
+
+# Appendix
+
+## Modification of the Boundaries for UK ICUs
+
+* Compared to Germany, there is only a small number of ICU beds with ventilation in the UK.
+* Therefore, the percentage of patients sent to ICU with ventilation should be reduced.
+* We will adopt the boundaries to reduce the probabilities in the `runoptUK` function:
+
+```{r, getDefaultBoundaries}
+  bounds <- getBounds()
+    a <- bounds$lower
+    b <- bounds$upper
+  length(a)
+```
+
+* Next, we have to find the corresponding variables (thrre are 29 variables in the vector).
+```{r}
+getParameterNameList(1:29)
+```
+
+* We need
+   * x16: "FactorPatientsHospitalToVentilation"        
+   * x18: "FactorPatientsNormalToVentilation" 
+   * x20: "FactorPatientsIntensiveToVentilation"    
+
+* The function `getParameterDataFrame()` show the values and gives a nice summary: 
+
+```{r, }
+getParameterDataFrame()
+```
+
+* x16: 5.0e-03  0.0200
+* x18: 1.0e-04  0.0020
+* x20: 2.5e-01  0.3500
+* Finally, we can implement the change as follows:
+
+```{r}
+factorUK <- 0.1
+ bounds <- getBounds()
+    a <- bounds$lower
+    b <- bounds$upper
+    a[16] <- a[16] * factorUK
+    a[18] <- a[18] * factorUK
+    a[20] <- a[20] * factorUK 
+    b[16] <- b[16] * factorUK
+    b[18] <- b[18] * factorUK
+    b[20] <- b[20] * factorUK
+```
+
+
+### Second consideration
+* Patients stay longer at intensive care:
+   * x6: AmntDaysIntensiveToAftercare 
+   * x7: AmntDaysIntensiveToVentilation            
+   * x8: AmntDaysIntensiveToDeath          
+
+```{r}
+factorUK <- 0.1
+factorIcuUK <- 2
+   bounds <- getBounds()
+    a <- bounds$lower
+    b <- bounds$upper
+      a[16] <- a[16] * factorUK
+    a[18] <- a[18] * factorUK
+    a[20] <- a[20] * factorUK 
+    b[16] <- b[16] * factorUK
+    b[18] <- b[18] * factorUK
+    b[20] <- b[20] * factorUK
+    a[6] <- a[6] * factorIcuUK
+    a[7] <- a[7] * factorIcuUK
+    a[8] <- a[8] * factorIcuUK 
+    b[6] <- b[6] * factorIcuUK
+    b[7] <- b[7] * factorIcuUK
+    b[8] <- b[8] * factorIcuUK
+a
+```
+
+## Results
+
+* resDefault
+184.0513
+*  resOpt01
+55.66561
+*  resOpt02
+28.0945
+*  (resDefault-resOpt01)/resDefault
+0.6975539
+
+```{r}
+para.df <- getParameterDataFrame()
+para.df[,]
+para.table <- xtable::xtable(para.df)
+```
+
+```{r}
+para.df <- getParameterDataFrame()
+para.df[,"obk"] <- a
+para.df[,"koeln"] <- b 
+para.df <- para.df[, -4]
+colnames(para.df) <- c("default", "minUK", "maxUK", "minDE", "MaxDE")
+para.table <- xtable::xtable(para.df)
+para.table
+```
+
+
+
+
+

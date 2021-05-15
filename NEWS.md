@@ -1,6 +1,43 @@
 # babsim.hospital
-## Release Policy:
-  * Even release numbers refer to unstable versions, e.g., 1.5.12
+
+## 11.8.2
+* CHANGES
+  *  'rmarkdown' package  declared as a dependency (in the suggests field)
+
+## 11.8.0
+* CHANGES
+  * Minor typos fixed
+
+## 11.7.26
+* NEW:
+  * UK data analysis added:
+     * vignette-NumericalMethods
+
+## 11.7.24
+* NEW:
+   * runoptUK accept new argument `factorUK` to adapt the probabilities for 
+   ventilated patients.
+
+## 11.7.22
+* NEW:
+   * getTrainTestFunction accepts additional argument simRepeats (default=1 for Windows)
+
+## 11.7.20
+* NEW:
+   * getAndCheckTrainData() function
+   * checkTrainConfig()
+   * checkTestData()
+   * getTestData()
+   * checkTestConf()
+
+
+## 11.7.18
+   * CHANGES:
+      * getTrainTestObjFun.R from develop to master. 
+
+## 11.7.16
+   * CHANGES:
+      * logLevel <- 0 in getTrainTestObjFun.R
 
 ## 11.7.14
   * BUGFIX:
@@ -22,6 +59,40 @@
 ## 11.7.10
    * CHANGES:
       * icudata.R, icudataFull.R, rkidata.R, and rkidataFull.R files added 
+
+
+## 11.7.24
+* NEW:
+   * runoptUK accept new argument `factorUK` to adapt the probabilities for 
+   ventilated patients.
+
+## 11.7.22
+* NEW:
+   * getTrainTestFunction accepts additional argument simRepeats (default=1 for Windows)
+
+## 11.7.20
+* NEW:
+   * getAndCheckTrainData() function
+   * checkTrainConfig()
+   * checkTestData()
+   * getTestData()
+   * checkTestConf()
+
+## 11.7.18
+  * Cleanup: code, vignette master
+
+## 11.7.14
+  * CHANGES:
+     * getTrainTestObjFunctions: logLevel <- 0
+
+## 11.7.12
+  * NEWS
+     * Vignette updated
+  
+## 11.7.10
+  * NEWS
+     * ukpara added
+     * vignette for master students
 
 ## 11.7.8
    * BUGFIX

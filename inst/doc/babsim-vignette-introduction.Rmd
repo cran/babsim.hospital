@@ -37,7 +37,6 @@ output:
     fig_caption: yes 
     includes:
           in_header: babsim.hospital.sty
-    pdf_document:
 vignette: >
   %\VignetteIndexEntry{Hospital Capacity Planning Using Discrete Event Simulation: Introduction}
   %\VignetteEngine{knitr::rmarkdown}
