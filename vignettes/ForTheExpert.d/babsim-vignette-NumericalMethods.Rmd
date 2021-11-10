@@ -1057,7 +1057,7 @@ visualizeGraph(para = paraOpt, option = "D")
   length(a)
 ```
 
-* Next, we have to find the corresponding variables (thrre are 29 variables in the vector).
+* Next, we have to find the corresponding variables (there are 29 variables in the vector).
 ```{r}
 getParameterNameList(1:29)
 ```
@@ -1140,7 +1140,6 @@ para.table <- xtable::xtable(para.df)
 para.df <- getParameterDataFrame()
 para.df[,"obk"] <- a
 para.df[,"koeln"] <- b 
-para.df <- para.df[, -4]
 colnames(para.df) <- c("default", "minUK", "maxUK", "minDE", "MaxDE")
 para.table <- xtable::xtable(para.df)
 para.table

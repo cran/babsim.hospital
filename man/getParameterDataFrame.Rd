@@ -5,8 +5,7 @@
 \title{getParameterDataFrame}
 \usage{
 getParameterDataFrame(
-  paraList = list(obk = getParaSet(5374), koeln = getParaSet(5315), nrw =
-    getParaSet(5))
+  paraList = list(obk = getParaSet(5374), koeln = getParaSet(5315))
 )
 }
 \arguments{

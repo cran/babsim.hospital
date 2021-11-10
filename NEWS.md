@@ -1,5 +1,10 @@
 # babsim.hospital
 
+## 11.8.4
+* CHANGES
+  * Roxygen note: 7.1.2
+  * Typos in vignette 
+
 ## 11.8.2
 * CHANGES
   *  'rmarkdown' package  declared as a dependency (in the suggests field)

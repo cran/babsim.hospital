@@ -406,6 +406,7 @@ babsimHospital <- function(arrivalTimes = NULL,
   if (conf$parallel) {
     nCores <- detectCores(logical = FALSE)
     mc.coresN = min(nCores - 1, round(conf$percCores * nCores))
+    mc.coresN = max(mc.coresN, 1)
     if (conf$verbosity > 1e2) {
       messagef("BEGIN: babsimHospital() calling parallel simFun() with %s cores: ###########################", 
                mc.coresN)

@@ -144,7 +144,7 @@ runOptLocal <- function(X,
     trainConf$ResourceNames <- resourceNames
     trainConf$ResourceEval <- resourceEval
     trainConf$percCores <- percCores
-    trainConf$logLevel <- 1
+    trainConf$logLevel <- 0
     trainConf$w2 <- icuWeights
     ## Check train config:
     messagef("trainConfSim:   %s - %s", trainConf$simulationDates$StartDate, trainConf$simulationDates$EndDate)

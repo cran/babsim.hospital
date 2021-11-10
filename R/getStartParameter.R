@@ -18,7 +18,7 @@ getStartParameter <- function(para = babsimHospitalPara(), region = -1) {
     localPara <- getParaSet(region)
     if (nrow(localPara) == 0) {
       ## Switch to default (koeln)
-      localPara <- getParaSet(5315)
+      localPara <- getParaSet(16077)
     }
     m <- as.matrix(localPara)
     m <- m[, -1]

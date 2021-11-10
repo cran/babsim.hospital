@@ -13,8 +13,7 @@
 #' df <- getParameterDataFrame()
 #' @export
 getParameterDataFrame <- function(paraList = list(
-                                    obk = getParaSet(5374), koeln = getParaSet(5315),
-                                    nrw = getParaSet(5)
+                                    obk = getParaSet(5374), koeln = getParaSet(5315)
                                   )) {
   x <- data.frame(getStartParameter())
   n <- length(x)

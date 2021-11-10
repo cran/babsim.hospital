@@ -107,7 +107,6 @@ runoptDirect <- function(expName = "obkpara20201017",
 
   messageDateRange("Date range for cases", rkiwerte$Refdatum)
   messageDateRange("Date range for resources", icuwerte$daten_stand)
-
   result.df <- data.frame(x = NULL, y = NULL)
   reslist <- list()
 
@@ -247,7 +246,7 @@ runoptDirect <- function(expName = "obkpara20201017",
     trainConf$ResourceNames <- resourceNames
     trainConf$ResourceEval <- resourceEval
     trainConf$percCores <- percCores
-    trainConf$logLevel <- 1
+    trainConf$logLevel <- 0
     trainConf$w2 <- icuWeights
     trainConf$seed <- seed + i
     ## Check train config:
@@ -263,6 +262,9 @@ runoptDirect <- function(expName = "obkpara20201017",
     set.seed(trainConf$seed)
     funEvals <- funEvals + (i - 1) * funEvalsFactor
     x0 <- getStartParameter(region = region)
+    if(is.null(nrow(x0))){
+      x0 <- matrix(x0, nrow = 1)
+    }
     if (nrow(x0) > 20) {
       x0 <- x0[1:20, ]
       messagef("Warning cutting some x0 parameters as there are too many")
@@ -462,7 +464,7 @@ runoptDirect <- function(expName = "obkpara20201017",
       testConf$ResourceNames <- resourceNames
       testConf$ResourceEval <- resourceEval
       testConf$percCores <- percCores
-      testConf$logLevel <- 1
+      testConf$logLevel <- 0
       testConf$w2 <- icuWeights
       testConf$seed <- seed + i + 1
       set.seed(testConf$seed)
