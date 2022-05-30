@@ -1,5 +1,15 @@
 # babsim.hospital
 
+## 11.8.8
+* NEW:
+  * function funBabsimHospital() added (moved from package SPOT)
+  * updateRkidatafile.R: Formatting improved
+
+## 11.8.6
+* CHANGES
+  * updateRkidataFile.R updated
+  * updateIcudataFile
+
 ## 11.8.4
 * CHANGES
   * Roxygen note: 7.1.2

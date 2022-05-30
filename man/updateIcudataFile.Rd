@@ -4,11 +4,9 @@
 \alias{updateIcudataFile}
 \title{updateIcudataFile Update ICU data File}
 \usage{
-updateIcudataFile(oldData = babsim.hospital::icudataFull, overwrite = TRUE)
+updateIcudataFile(overwrite = TRUE)
 }
 \arguments{
-\item{oldData}{Old icu (DIVI) data, default \code{babsim.hospital::icudata}.}
-
 \item{overwrite}{logical Overwrite existing file. Default \code{TRUE}.}
 }
 \value{

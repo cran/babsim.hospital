@@ -4,11 +4,12 @@
 \alias{updateRkidataFile}
 \title{updateRkidataFile Update RKI data File}
 \usage{
-updateRkidataFile(fileName, overwrite = TRUE)
+updateRkidataFile(fileName = NULL, overwrite = TRUE)
 }
 \arguments{
 \item{fileName}{RKI Filename, e.g.,
-\code{'https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data'}}
+\code{'https://www.arcgis.com/sharing/rest/content/}
+\code{items/f10774f1c63e40168479a1feb6c7ca74/data'}}
 
 \item{overwrite}{logical Overwrite existing file. Default \code{TRUE}.}
 }

@@ -40,7 +40,8 @@
 #'     }
 #'
 #' @param fileName RKI Filename, e.g.,
-#' \code{'https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data'}
+#' \code{'https://www.arcgis.com/sharing/rest/content/}
+#' \code{items/f10774f1c63e40168479a1feb6c7ca74/data'}
 #' @param overwrite logical Overwrite existing file. Default \code{TRUE}.
 #'
 #' @importFrom utils read.csv
@@ -48,30 +49,35 @@
 #' @return True if new data was downloaded, otherwise false
 #'
 #' @export
-updateRkidataFile <- function(fileName, overwrite = TRUE) {
-  # Testing: fileName =
-  # 'https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data'
-  # overwrite = TRUE
-  if (!exists("fileName")) {
-    fileName <- "https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data"
-  }
-  rkiOld <- rkidataFull
-  rkidataFull <- read.csv(url(fileName), header = TRUE, encoding = "UTF-8", stringsAsFactors = FALSE)
-  if (all.equal(rkiOld, rkidataFull)) {
-    ## Download succeeded but there is no new data
-    return(FALSE)
-  }
-
-  usethis::use_data(name = rkidataFull, overwrite = overwrite)
-
-  rkidata <- rkidataFull[which(rkidataFull$Meldedatum >= as.Date("2020-09-01")), ]
-
-  names(rkidata) <- c(
-    "FID", "IdBundesland", "Bundesland", "Landkreis", "Altersgruppe",
-    "Geschlecht", "AnzahlFall", "AnzahlTodesfall", "Refdatum", "IdLandkreis",
-    "Datenstand", "NeuerFall", "NeuerTodesfall", "Meldedatum", "NeuGenesen",
-    "AnzahlGenesen", "IstErkrankungsbeginn", "Altersgruppe2"
-  )
-  usethis::use_data(name = rkidata, overwrite = overwrite)
-  return(TRUE)
+updateRkidataFile <- function(fileName = NULL,
+                              overwrite = TRUE){
+    # Testing:
+    # fileName = "https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data"
+    # overwrite = TRUE
+    if(is.null(fileName)){
+      fileName <- "https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data"
+    }
+    load("babsim.hospital/data/rkidataFull.rda")
+    rkiOld <- rkidataFull
+    rkidataFull <- read.csv(url(fileName),
+                            header=TRUE,
+                            encoding="UTF-8",
+                            stringsAsFactors = F)
+    if(isTRUE(all.equal(rkiOld,rkidataFull)[1])){
+        ## Download succeeded but there is no new data
+        return(FALSE)
+    }
+    
+    save(rkidataFull, file = "babsim.hospital/data/rkidataFull.rda", compress="xz")
+    
+    rkidata <- rkidataFull[which(rkidataFull$Meldedatum >= as.Date("2020-09-01")), ]
+    
+    names(rkidata) <- c("FID", "IdBundesland",   "Bundesland",     "Landkreis",
+                        "Altersgruppe",   "Geschlecht",     "AnzahlFall",     
+                        "AnzahlTodesfall", "Refdatum",     "IdLandkreis",  
+                        "Datenstand",     "NeuerFall",      "NeuerTodesfall",
+                        "Meldedatum",       "NeuGenesen",     "AnzahlGenesen",
+                        "IstErkrankungsbeginn", "Altersgruppe2")
+    save(rkidata, file = "babsim.hospital/data/rkidata.rda", compress="xz")
+    return(TRUE)
 }

@@ -224,7 +224,7 @@ print(p[[2]])
 
 ### GV-ISys: Gemeindeverzeichnis-Informationssystem (GV-ISys) of the German Federal Statistics Office
 
-* Gemeindeverzeichnis-Informationssystem (GV-ISys) of the German Federal Statistics Office, see [https://www.destatis.de](https://www.destatis.de)
+* Gemeindeverzeichnis-Informationssystem (GV-ISys) of the German Federal Statistics Office. , see also destatis.de.
 
 ## Preprocessing DIVI/ICU Data
 
